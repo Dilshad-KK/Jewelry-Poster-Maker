@@ -1,21 +1,228 @@
+"use client";
 export const dynamic = "force-static";
+import { useEffect, useRef } from "react";
 
 export default function Home() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const frontCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let raf = 0;
+    const particles: {
+      x: number;
+      y: number;
+      r: number;
+      vx: number;
+      vy: number;
+      alpha: number;
+      tw: number;
+    }[] = [];
+
+    const resize = () => {
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+
+      const count = w < 480 ? 40 : w < 768 ? 60 : 90;
+      particles.length = 0;
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          r: 1 + Math.random() * 2.2,
+          vx: (Math.random() * 0.4 - 0.2),
+          vy: 0.6 + Math.random() * 1.3,
+          alpha: 0.6 + Math.random() * 0.4,
+          tw: Math.random() * Math.PI * 2,
+        });
+      }
+    };
+
+    const draw = () => {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      ctx.clearRect(0, 0, w, h);
+
+      // soft vignette
+      const grd = ctx.createLinearGradient(0, 0, 0, h);
+      grd.addColorStop(0, "rgba(0,0,0,0)");
+      grd.addColorStop(1, "rgba(0,0,0,0.08)");
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, w, h);
+
+      const time = performance.now() / 1000;
+      for (const p of particles) {
+        // movement
+        p.x += p.vx + Math.sin(p.tw + time * 1.2) * 0.15;
+        p.y += p.vy;
+        if (p.y - p.r > h) {
+          p.y = -p.r - Math.random() * 20;
+          p.x = Math.random() * w;
+        }
+        if (p.x < -10) p.x = w + 10;
+        if (p.x > w + 10) p.x = -10;
+
+        // glow circle
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.shadowColor = "rgba(255,207,64,0.9)";
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = "#ffcf40";
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // occasional sparkle
+        if (((p.tw * 1000) | 0) % 17 === 0) {
+          const s = p.r * 1.5;
+          ctx.save();
+          ctx.globalAlpha = p.alpha * 0.8;
+          ctx.strokeStyle = "rgba(255,230,150,0.8)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(p.x - s, p.y);
+          ctx.lineTo(p.x + s, p.y);
+          ctx.moveTo(p.x, p.y - s);
+          ctx.lineTo(p.x, p.y + s);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      raf = requestAnimationFrame(draw);
+    };
+
+    const onVis = () => {
+      if (document.hidden) {
+        cancelAnimationFrame(raf);
+      } else {
+        raf = requestAnimationFrame(draw);
+      }
+    };
+
+    resize();
+    raf = requestAnimationFrame(draw);
+    window.addEventListener("resize", resize);
+    document.addEventListener("visibilitychange", onVis);
+
+    // FRONT CANVAS inside card (particles in front of card background)
+    const frontCanvas = frontCanvasRef.current;
+    const cardEl = cardRef.current;
+    let raf2 = 0;
+    let ro: ResizeObserver | null = null;
+    let ctx2: CanvasRenderingContext2D | null = null;
+    const particles2: { x: number; y: number; r: number; vx: number; vy: number; alpha: number; tw: number }[] = [];
+
+    const resizeFront = () => {
+      if (!frontCanvas || !cardEl) return;
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const rect = cardEl.getBoundingClientRect();
+      frontCanvas.width = Math.floor(rect.width * dpr);
+      frontCanvas.height = Math.floor(rect.height * dpr);
+      frontCanvas.style.width = `${rect.width}px`;
+      frontCanvas.style.height = `${rect.height}px`;
+      ctx2 = frontCanvas.getContext("2d");
+      if (!ctx2) return;
+      ctx2.setTransform(1, 0, 0, 1, 0, 0);
+      ctx2.scale(dpr, dpr);
+      const count = rect.width < 420 ? 14 : 22;
+      particles2.length = 0;
+      for (let i = 0; i < count; i++) {
+        particles2.push({
+          x: Math.random() * rect.width,
+          y: Math.random() * rect.height,
+          r: 0.6 + Math.random() * 1.2,
+          vx: (Math.random() * 0.3 - 0.15),
+          vy: 0.5 + Math.random() * 0.9,
+          alpha: 0.35 + Math.random() * 0.35,
+          tw: Math.random() * Math.PI * 2,
+        });
+      }
+    };
+
+    const drawFront = () => {
+      if (!frontCanvas || !ctx2) return;
+      const w = frontCanvas.clientWidth;
+      const h = frontCanvas.clientHeight;
+      ctx2.clearRect(0, 0, w, h);
+      const time = performance.now() / 1000;
+      for (const p of particles2) {
+        p.x += p.vx + Math.sin(p.tw + time * 1.4) * 0.12;
+        p.y += p.vy;
+        if (p.y - p.r > h) {
+          p.y = -p.r - Math.random() * 10;
+          p.x = Math.random() * w;
+        }
+        if (p.x < -8) p.x = w + 8;
+        if (p.x > w + 8) p.x = -8;
+
+        // small glow
+        ctx2.save();
+        ctx2.globalAlpha = p.alpha;
+        ctx2.shadowColor = "rgba(255,207,64,0.8)";
+        ctx2.shadowBlur = 6;
+        ctx2.fillStyle = "#ffcf40";
+        ctx2.beginPath();
+        ctx2.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx2.fill();
+        ctx2.restore();
+      }
+      raf2 = requestAnimationFrame(drawFront);
+    };
+
+    if (frontCanvas && cardEl) {
+      resizeFront();
+      drawFront();
+      ro = new ResizeObserver(resizeFront);
+      ro.observe(cardEl);
+      window.addEventListener("resize", resizeFront);
+    }
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      document.removeEventListener("visibilitychange", onVis);
+      cancelAnimationFrame(raf);
+      if (frontCanvas && cardEl) {
+        window.removeEventListener("resize", resizeFront);
+      }
+      cancelAnimationFrame(raf2);
+      if (ro && cardEl) ro.disconnect();
+    };
+  }, []);
+
   return (
-    <main className="min-h-[100dvh] w-full bg-gradient-to-br from-gray-950 via-black to-amber-950 flex items-center justify-center p-4 sm:p-6 overflow-hidden">
-      <div className="relative w-full max-w-md overflow-hidden">
+    <main className="relative min-h-[100dvh] w-full bg-gradient-to-br from-gray-950 via-black to-amber-950 flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+      {/* Falling gold particles canvas */}
+      <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 z-0" />
+
+      <div className="relative z-10 w-full max-w-md overflow-hidden">
         
         {/* Background Elements */}
         <div className="absolute -top-20 -right-20 w-60 h-60 bg-amber-500/10 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-amber-600/10 rounded-full blur-3xl"></div>
         
         {/* Main Card */}
-        <div className="relative bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl rounded-3xl border border-amber-500/20 shadow-2xl overflow-hidden">
+        <div ref={cardRef} className="relative bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl rounded-3xl border border-amber-500/20 shadow-2xl overflow-hidden">
           
           {/* Top Decorative Strip */}
           <div className="h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
-          
-          <div className="flex flex-col items-center space-y-4 p-4 sm:space-y-6 sm:p-6">
+          {/* Front particles overlay within card */}
+          <canvas ref={frontCanvasRef} className="pointer-events-none absolute inset-0 z-10" />
+
+          <div className="relative z-20 flex flex-col items-center space-y-4 p-4 sm:space-y-6 sm:p-6">
             
             {/* Logo */}
             <div className="mt-2 sm:mt-4">
