@@ -20,7 +20,7 @@ export default function Home() {
             {/* Logo */}
             <div className="mt-4">
               <img
-                src="/uploads/logo.png"
+                src="/logo.jpg"
                 alt="KGP Gold"
                 className="h-14 sm:h-16 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]"
               />
@@ -33,7 +33,7 @@ export default function Home() {
                 <span>Live Gold Rates</span>
               </div>
               
-              <h1 className="text-3xl font-bold tracking-tight">
+              <h1 className="text-3xl font-bold tracking-tight font-serif">
                 <span className="text-white">Today's</span>{' '}
                 <span className="text-transparent bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text">
                   Gold Rate
