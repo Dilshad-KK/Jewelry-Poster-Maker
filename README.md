@@ -38,3 +38,17 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+
+## Supabase Backend
+
+- Env vars (see `.env.example`):
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (also supports `NEXT_PUBLIC_SUPABSE_ANON_KEY`)
+  - `SUPABASE_SERVICE_ROLE_KEY` (server only)
+- API routes:
+  - `GET /app/api/rates` – fetch latest rate
+  - `POST /app/api/rates` – upsert today’s rate `{ perGram, perSovereign, imageUrl?, shopName?, shopAddress? }`
+  - `POST /app/api/upload` – multipart form upload with `file` field. Returns `{ path, publicUrl }` in the `uploads` bucket.
+- SQL: `supabase.sql` creates the `rates` table and a public `uploads` storage bucket.
+
+Note: Vercel’s filesystem is ephemeral; do not write to `public/uploads` at runtime. Use Supabase Storage (free tier) or another object store.
