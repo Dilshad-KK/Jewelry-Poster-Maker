@@ -31,16 +31,22 @@ export default function Home() {
           setDisplayImg(null);
           setImageLoading(false);
         } else if (url !== displayImg) {
-          setImageLoading(true);
           const img = new Image();
-          img.onload = () => {
+          img.src = url;
+          if (img.complete && img.naturalWidth > 0) {
+            // Already in cache, swap instantly without spinner
             setDisplayImg(url);
             setImageLoading(false);
-          };
-          img.onerror = () => {
-            setImageLoading(false);
-          };
-          img.src = url;
+          } else {
+            setImageLoading(true);
+            img.onload = () => {
+              setDisplayImg(url);
+              setImageLoading(false);
+            };
+            img.onerror = () => {
+              setImageLoading(false);
+            };
+          }
         }
       } catch (e) {
         // eslint-disable-next-line no-console

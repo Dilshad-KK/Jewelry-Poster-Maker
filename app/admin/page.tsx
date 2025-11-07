@@ -22,7 +22,7 @@ export default function AdminPage() {
 
     const prefill = async () => {
       try {
-        const res = await fetch('/api/rates', { cache: 'no-store' });
+        const res = await fetch(`/api/rates?t=${Date.now()}`, { cache: 'no-store' });
         const json = await res.json();
         const r = json?.rate;
         if (r) {
@@ -38,6 +38,15 @@ export default function AdminPage() {
       }
     };
     prefill();
+
+    const onFocus = () => prefill();
+    const onVis = () => { if (!document.hidden) prefill(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVis);
+    };
   }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
