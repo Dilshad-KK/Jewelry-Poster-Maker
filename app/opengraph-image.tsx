@@ -6,7 +6,7 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function OGImage() {
-  const hdrs = headers();
+  const hdrs = await headers();
   const host = hdrs.get("x-forwarded-host") || hdrs.get("host") || "localhost:3000";
   const proto = (hdrs.get("x-forwarded-proto") || "http").split(",")[0];
   const base = `${proto}://${host}`;
@@ -124,4 +124,3 @@ export default async function OGImage() {
     }
   );
 }
-

@@ -13,7 +13,7 @@ export const revalidate = 0;
 
 export async function generateMetadata(): Promise<Metadata> {
   // Prefer explicit site URL; otherwise infer from request headers
-  const hdrs = headers();
+  const hdrs = await headers();
   const host = hdrs.get("x-forwarded-host") || hdrs.get("host") || "localhost:3000";
   const proto = (hdrs.get("x-forwarded-proto") || "http").split(",")[0];
   const inferredBase = `${proto}://${host}`;
