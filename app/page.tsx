@@ -284,12 +284,12 @@ export default function Home() {
 
             {/* Header */}
             <div className="text-center space-y-2 sm:space-y-3">
-              <div className="inline-flex items-center space-x-2 text-amber-400/80 text-xs font-semibold tracking-widest uppercase">
+              {/* <div className="inline-flex items-center space-x-2 text-amber-400/80 text-xs font-semibold tracking-widest uppercase">
                 <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"></div>
                 <span>Live Gold Rates</span>
-              </div>
+              </div> */}
               
-              <h1 className="text-3xl font-bold tracking-tight font-serif">
+              <h1 className="text-2xl font-bold tracking-tight font-serif">
                 <span className="text-white">Today's</span>{' '}
                 <span className="text-transparent bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text">
                   Gold Rate
@@ -310,36 +310,38 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Jewellery Image */}
-            <div className="relative w-full max-w-xs">
+            {/* Jewellery Image - square within constraints */}
+            <div className="relative w-full max-w-[260px] sm:max-w-xs">
               <div className="absolute -inset-3 bg-amber-500/10 rounded-2xl blur-xl"></div>
               <div className="relative rounded-2xl overflow-hidden border border-amber-500/30 shadow-2xl">
-                {displayImg ? (
-                  <img
-                    src={displayImg}
-                    alt="Gold Jewellery"
-                    className="w-full h-32 sm:h-40 object-cover transform hover:scale-105 transition-transform duration-700"
-                  />
-                ) : (
-                  <div className="w-full h-32 sm:h-40 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
-                    <span className="text-amber-200/60 text-xs">No image</span>
-                  </div>
-                )}
-                {imageLoading && (
-                  <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center">
-                    <div className="w-8 h-8 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                <div className="relative w-full pt-[100%]">{/* 1:1 square */}
+                  {displayImg ? (
+                    <img
+                      src={displayImg}
+                      alt="Gold Jewellery"
+                      className="absolute inset-0 w-full h-full object-cover transform hover:scale-105 transition-transform duration-700"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                      <span className="text-amber-200/60 text-xs">No image</span>
+                    </div>
+                  )}
+                  {imageLoading && (
+                    <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                </div>
               </div>
             </div>
 
-            {/* Price Cards */}
-            <div className="grid grid-cols-1 gap-4 w-full">
+            {/* Price Cards: two per row on mobile */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 w-full">
               {/* Per Gram */}
               <div className="group relative">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl blur opacity-30 group-hover:opacity-70 transition duration-300"></div>
-                <div className="relative bg-gray-900/80 backdrop-blur-sm border border-amber-500/20 rounded-xl p-4 text-center group-hover:border-amber-500/40 transition-all duration-300">
+                <div className="relative bg-gray-900/80 backdrop-blur-sm border border-amber-500/20 rounded-xl p-3 sm:p-4 text-center group-hover:border-amber-500/40 transition-all duration-300">
                   <div className="text-2xl font-black text-amber-300 mb-1">
                     ₹ {rate?.per_gram?.toLocaleString('en-IN') ?? '—'}
                   </div>
@@ -352,7 +354,7 @@ export default function Home() {
               {/* Per Sovereign */}
               <div className="group relative">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl blur opacity-30 group-hover:opacity-70 transition duration-300"></div>
-                <div className="relative bg-gray-900/80 backdrop-blur-sm border border-amber-500/20 rounded-xl p-4 text-center group-hover:border-amber-500/40 transition-all duration-300">
+                <div className="relative bg-gray-900/80 backdrop-blur-sm border border-amber-500/20 rounded-xl p-3 sm:p-4 text-center group-hover:border-amber-500/40 transition-all duration-300">
                   <div className="text-2xl font-black text-amber-300 mb-1">
                     ₹ {rate?.per_sovereign?.toLocaleString('en-IN') ?? '—'}
                   </div>

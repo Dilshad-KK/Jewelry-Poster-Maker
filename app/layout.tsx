@@ -1,41 +1,83 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { Cinzel, Inter } from "next/font/google";
+import { supabaseAdmin } from "@/lib/supabase/server";
 import "@/styles/globals.css";
 
 const cinzel = Cinzel({ subsets: ["latin"], variable: "--font-cinzel" });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
-  title: "Today’s Gold Rate — KGP Gold, Koduvally",
-  description:
-    "Today’s gold price: ₹ 11,185 per gram and ₹ 89,480 per sovereign. KGP Gold, Mangalya Complex, Main Road, Koduvally.",
-  openGraph: {
-    title: "Today’s Gold Rate — KGP Gold, Koduvally",
-    description:
-      "Today’s gold price: ₹ 11,185 per gram and ₹ 89,480 per sovereign. KGP Gold, Mangalya Complex, Main Road, Koduvally.",
-    url: "/",
-    siteName: "KGP Gold",
-    images: [
-      {
-        url: "/uploads/gold-og.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Today’s Gold Rate poster — KGP Gold",
-      },
-    ],
-    type: "website",
-    locale: "en_US",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Today’s Gold Rate — KGP Gold, Koduvally",
-    description:
-      "Today’s gold price: ₹ 11,185 per gram and ₹ 89,480 per sovereign. KGP Gold, Mangalya Complex, Main Road, Koduvally.",
-    images: ["/uploads/gold-og.jpg"],
-  },
-};
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const metadataBase = new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000");
+
+  // Defaults
+  let perGram: number | undefined;
+  let perSovereign: number | undefined;
+  let imageUrl: string | undefined;
+  let shopName: string | undefined;
+  let shopAddress: string | undefined;
+
+  try {
+    if (supabaseAdmin) {
+      const { data, error } = await supabaseAdmin
+        .from("rates")
+        .select("per_gram, per_sovereign, image_url, shop_name, shop_address")
+        .order("date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!error && data) {
+        perGram = typeof data.per_gram === "number" ? data.per_gram : undefined;
+        perSovereign = typeof data.per_sovereign === "number" ? data.per_sovereign : undefined;
+        imageUrl = data.image_url || undefined;
+        shopName = data.shop_name || undefined;
+        shopAddress = data.shop_address || undefined;
+      }
+    }
+  } catch {
+    // ignore — use defaults below
+  }
+
+  const title = "Today’s Gold Rate — KGP Gold, Koduvally";
+  const descBase = shopName && shopAddress
+    ? `${shopName}, ${shopAddress}`
+    : "KGP Gold, Mangalya Complex, Main Road, Koduvally.";
+  const description = perGram && perSovereign
+    ? `Today’s gold price: ₹ ${perGram.toLocaleString("en-IN")} per gram and ₹ ${perSovereign.toLocaleString("en-IN")} per sovereign. ${descBase}`
+    : `Today’s gold price. ${descBase}`;
+
+  const ogImage = imageUrl || "/uploads/gold-og.jpg";
+
+  return {
+    metadataBase,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: "/",
+      siteName: "KGP Gold",
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: "Today’s Gold Rate poster — KGP Gold",
+        },
+      ],
+      type: "website",
+      locale: "en_US",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
+    },
+  } satisfies Metadata;
+}
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
