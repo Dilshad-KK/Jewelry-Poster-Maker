@@ -1,11 +1,13 @@
 "use client";
 export const dynamic = "force-static";
 import { useEffect, useRef, useState } from "react";
+import * as htmlToImage from "html-to-image";
 
 export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frontCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const shareBtnRef = useRef<HTMLButtonElement | null>(null);
   const [rate, setRate] = useState<{
     date?: string;
     per_gram?: number;
@@ -16,6 +18,51 @@ export default function Home() {
   } | null>(null);
   const [displayImg, setDisplayImg] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState<boolean>(false);
+  const [exporting, setExporting] = useState<boolean>(false);
+  const [hideShare, setHideShare] = useState<boolean>(false);
+
+  const exportCard = async () => {
+    const node = cardRef.current;
+    if (!node || exporting) return;
+    try {
+      setExporting(true);
+      // hide share button during capture
+      setHideShare(true);
+      await new Promise((r) => setTimeout(r, 60));
+      const dataUrl = await htmlToImage.toPng(node, {
+        cacheBust: true,
+        pixelRatio: Math.min(2, window.devicePixelRatio || 1.5),
+        backgroundColor: "#0b0b0b",
+        // try to inline images cross-origin
+        quality: 1,
+      });
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const date = new Date();
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      const fileName = `kgp-gold-${y}${m}${d}.png`;
+      const file = new File([blob], fileName, { type: "image/png" });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: "KGP Gold", text: "Today’s Gold Rate" });
+      } else {
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn("Export failed", e);
+    } finally {
+      setHideShare(false);
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchRate = async () => {
@@ -265,6 +312,25 @@ export default function Home() {
         
         {/* Main Card */}
         <div ref={cardRef} className="relative bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl rounded-3xl border border-amber-500/20 shadow-2xl overflow-hidden">
+          {/* Share button (top-right) */}
+          <button
+            ref={shareBtnRef}
+            onClick={exportCard}
+            aria-label="Share image"
+            className={`absolute top-2 right-2 z-30 inline-flex items-center justify-center rounded-full bg-amber-500 text-black shadow-lg hover:scale-105 active:scale-95 transition-transform duration-150 ${hideShare ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+            style={{ width: 36, height: 36 }}
+            title="Share / Save image"
+            disabled={exporting}
+          >
+            {exporting ? (
+              <span className="block w-4 h-4 rounded-full border-2 border-black/70 border-t-transparent animate-spin" />
+            ) : (
+              // Filled share icon (custom SVG), golden button with black icon for contrast
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7a3.048 3.048 0 0 0 0-1.39l7.05-4.11A2.99 2.99 0 1 0 14 4a2.99 2.99 0 0 0 .04.49L7 8.6A3 3 0 1 0 7 15.4l7.04 4.11c-.02.16-.04.32-.04.49a3 3 0 1 0 3-3.92z" />
+              </svg>
+            )}
+          </button>
           
           {/* Top Decorative Strip */}
           <div className="h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
@@ -373,15 +439,7 @@ export default function Home() {
               </p>
             </div>
 
-            {/* CTA Button (temporarily disabled: export not implemented) */}
-            {/**
-            <div className="flex justify-center w-full pt-2 pb-4">
-              <button className="group relative inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-amber-500 to-amber-700 px-8 py-4 font-semibold text-white shadow-2xl hover:shadow-amber-500/25 transform hover:scale-105 transition-all duration-300 overflow-hidden w-full max-w-xs">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                <span className="relative flex items-center justify-center space-x-2">Export Poster</span>
-              </button>
-            </div>
-            */}
+            {/* CTA removed in favor of share icon */}
 
             {/* Accent Elements removed to fit within 100dvh */}
 

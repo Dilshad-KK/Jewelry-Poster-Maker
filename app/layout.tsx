@@ -47,6 +47,29 @@ export async function generateMetadata(): Promise<Metadata> {
     // ignore — use defaults below
   }
 
+  // If the image is a Supabase Storage URL, ensure it is fetchable by crawlers.
+  // We create a time-limited signed URL so previews work even if the bucket is private.
+  if (imageUrl && supabaseAdmin) {
+    try {
+      const u = new URL(imageUrl);
+      if (u.hostname.endsWith("supabase.co") && u.pathname.includes("/storage/v1/object/")) {
+        // Extract bucket and path from: /storage/v1/object/(public|sign)/<bucket>/<path>
+        const m = u.pathname.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+)$/);
+        if (m) {
+          const [, bucket, path] = m;
+          const { data: signed, error } = await supabaseAdmin.storage
+            .from(bucket)
+            .createSignedUrl(path, 60 * 60 * 24 * 7); // 7 days
+          if (!error && signed?.signedUrl) {
+            imageUrl = signed.signedUrl;
+          }
+        }
+      }
+    } catch {
+      // ignore and keep original URL
+    }
+  }
+
   const title = "Today’s Gold Rate — KGP Gold, Koduvally";
   const descBase = shopName && shopAddress
     ? `${shopName}, ${shopAddress}`
