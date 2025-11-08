@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { Cinzel, Inter } from "next/font/google";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { headers } from "next/headers";
 import "@/styles/globals.css";
 
 const cinzel = Cinzel({ subsets: ["latin"], variable: "--font-cinzel" });
@@ -11,7 +12,13 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const metadataBase = new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000");
+  // Prefer explicit site URL; otherwise infer from request headers
+  const hdrs = headers();
+  const host = hdrs.get("x-forwarded-host") || hdrs.get("host") || "localhost:3000";
+  const proto = (hdrs.get("x-forwarded-proto") || "http").split(",")[0];
+  const inferredBase = `${proto}://${host}`;
+  const base = process.env.NEXT_PUBLIC_SITE_URL || inferredBase;
+  const metadataBase = new URL(base);
 
   // Defaults
   let perGram: number | undefined;
@@ -48,7 +55,8 @@ export async function generateMetadata(): Promise<Metadata> {
     ? `Today’s gold price: ₹ ${perGram.toLocaleString("en-IN")} per gram and ₹ ${perSovereign.toLocaleString("en-IN")} per sovereign. ${descBase}`
     : `Today’s gold price. ${descBase}`;
 
-  const ogImage = imageUrl || "/uploads/gold-og.jpg";
+  // Only include preview image if we actually have one from DB
+  const hasImage = Boolean(imageUrl);
 
   return {
     metadataBase,
@@ -59,14 +67,16 @@ export async function generateMetadata(): Promise<Metadata> {
       description,
       url: "/",
       siteName: "KGP Gold",
-      images: [
-        {
-          url: ogImage,
-          width: 1200,
-          height: 630,
-          alt: "Today’s Gold Rate poster — KGP Gold",
-        },
-      ],
+      images: hasImage
+        ? [
+            {
+              url: imageUrl as string,
+              width: 1200,
+              height: 630,
+              alt: "Today’s Gold Rate — Uploaded image",
+            },
+          ]
+        : undefined,
       type: "website",
       locale: "en_US",
     },
@@ -74,7 +84,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: "summary_large_image",
       title,
       description,
-      images: [ogImage],
+      images: hasImage ? [imageUrl as string] : undefined,
     },
   } satisfies Metadata;
 }
