@@ -125,7 +125,12 @@ export default function AdminPage() {
           if (r.shop_address) setShopAddress(r.shop_address);
           if (typeof r.per_gram === 'number') setPerGram(String(r.per_gram));
           if (typeof r.per_sovereign === 'number') setPerSovereign(String(r.per_sovereign));
-          if (r.date) setDate(r.date);
+          // If stored date is not today, keep today's date
+          if (r.date && r.date === todayLocal) {
+            setDate(r.date);
+          } else {
+            setDate(todayLocal);
+          }
           if (r.image_url) setPreviousImageUrl(r.image_url);
         }
         // Load color settings

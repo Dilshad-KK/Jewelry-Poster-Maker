@@ -135,12 +135,27 @@ export default function Home() {
   useEffect(() => {
     const fetchRate = async () => {
       try {
+        // Ensure today's row exists by copying latest if needed
+        try {
+          await fetch("/api/rates/ensure-today", { method: "POST", cache: "no-store" });
+        } catch {}
+
         const res = await fetch("/api/rates", { cache: "no-store" });
         const json = await res.json();
         const latest = json?.rate ?? null;
-        setRate(latest);
+        // Normalize date: if not today's date, show today
+        let adjusted = latest;
+        if (latest && latest.date) {
+          const now = new Date();
+          const tzAdjusted = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+          const todayLocal = tzAdjusted.toISOString().slice(0, 10);
+          if (latest.date !== todayLocal) {
+            adjusted = { ...latest, date: todayLocal };
+          }
+        }
+        setRate(adjusted);
 
-        const url = latest?.image_url;
+        const url = adjusted?.image_url;
         if (url) {
           setImageLoading(true);
           setDisplayImg(url);
