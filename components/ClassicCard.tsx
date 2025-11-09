@@ -9,7 +9,7 @@ type Rate = {
   shop_address?: string | null;
 } | null;
 
-type Settings = { theme: 'classic' | 'overlay'; primaryColor?: string | null; accentColor?: string | null; bgColor?: string | null };
+type Settings = { theme: 'classic' | 'overlay'; primaryColor?: string | null; accentColor?: string | null; bgColor?: string | null; logoUrl?: string | null };
 
 type Props = {
   rate: Rate;
@@ -21,9 +21,10 @@ type Props = {
   exporting: boolean;
   hideShare: boolean;
   onShare: () => void | Promise<void>;
+  hideFrontCanvas?: boolean;
 };
 
-export default function ClassicCard({ rate, settings, displayImg, imageLoading, cardRef, frontCanvasRef, exporting, hideShare, onShare }: Props) {
+export default function ClassicCard({ rate, settings, displayImg, imageLoading, cardRef, frontCanvasRef, exporting, hideShare, onShare, hideFrontCanvas }: Props) {
   const hexToRgba = (hex: string, alpha: number) => {
     const h = hex.replace('#', '');
     const bigint = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
@@ -65,13 +66,19 @@ export default function ClassicCard({ rate, settings, displayImg, imageLoading, 
       {/* Top Decorative Strip */}
       <div className="h-1 bg-gradient-to-r from-transparent to-transparent" style={{ backgroundImage: `linear-gradient(to right, transparent, ${settings.primaryColor || '#fbbf24'}, transparent)` }} />
       {/* Front particles overlay within card */}
-      <canvas ref={frontCanvasRef} className="pointer-events-none absolute inset-0 z-10" />
+      {!hideFrontCanvas && (
+        <canvas ref={frontCanvasRef} className="pointer-events-none absolute inset-0 z-10" />
+      )}
 
       <div className="relative z-20 flex flex-col items-center space-y-3 p-3 sm:space-y-3 sm:p-3">
         {/* Logo */}
         <div className="mt-2 sm:mt-1">
-          <img src="/logo.jpg" alt="KGP Gold" className="h-14 sm:h-16 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]" />
-        </div>
+            {settings.logoUrl ? (
+              <img crossOrigin="anonymous" src={settings.logoUrl} alt="Logo" className="h-14 sm:h-16 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]" />
+            ) : (
+              <div className="h-14 sm:h-16 w-16 rounded-md bg-white/10 border border-white/10 flex items-center justify-center text-white/70 text-xs">Logo</div>
+            )}
+          </div>
 
         {/* Header */}
         <div className="text-center space-y-2 sm:space-y-3">
@@ -99,7 +106,12 @@ export default function ClassicCard({ rate, settings, displayImg, imageLoading, 
           <div className="relative rounded-2xl overflow-hidden border shadow-2xl" style={{ borderColor: primary + '4D' }}>
             <div className="relative w-full pt-[100%]">{/* Square on all sizes to reduce height on small phones */}
               {displayImg ? (
-                <img src={displayImg} alt="Gold Jewellery" className="absolute inset-0 w-full h-full object-cover transform hover:scale-105 transition-transform duration-700" />
+                <img
+                  crossOrigin="anonymous"
+                  src={displayImg}
+                  alt="Gold Jewellery"
+                  className={`absolute inset-0 w-full h-full object-cover ${exporting ? '' : 'transform hover:scale-105 transition-transform duration-700'}`}
+                />
               ) : (
                 <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
                   <span className="text-amber-200/60 text-xs">No image</span>

@@ -9,6 +9,7 @@ type SettingsPayload = {
   primaryColor?: string | null;
   accentColor?: string | null;
   bgColor?: string | null;
+  logoUrl?: string | null;
 };
 
 export async function GET() {
@@ -17,7 +18,7 @@ export async function GET() {
   }
   const { data, error } = await supabaseAdmin
     .from('site_settings')
-    .select('theme, primary_color, accent_color, bg_color')
+    .select('theme, primary_color, accent_color, bg_color, logo_url')
     .eq('id', 'default')
     .maybeSingle();
 
@@ -33,6 +34,7 @@ export async function GET() {
           primaryColor: data.primary_color || null,
           accentColor: data.accent_color || null,
           bgColor: (data as any).bg_color || null,
+          logoUrl: (data as any).logo_url || null,
         }
       : null,
   });
@@ -59,13 +61,14 @@ export async function POST(req: Request) {
     primary_color: body.primaryColor ?? null,
     accent_color: body.accentColor ?? null,
     bg_color: body.bgColor ?? null,
+    logo_url: body.logoUrl ?? null,
     updated_at: new Date().toISOString(),
   };
 
   const { data, error } = await supabaseAdmin
     .from('site_settings')
     .upsert(row, { onConflict: 'id' })
-    .select('theme, primary_color, accent_color, bg_color')
+    .select('theme, primary_color, accent_color, bg_color, logo_url')
     .maybeSingle();
 
   if (error) {
@@ -79,6 +82,7 @@ export async function POST(req: Request) {
           primaryColor: data.primary_color || null,
           accentColor: data.accent_color || null,
           bgColor: (data as any).bg_color || null,
+          logoUrl: (data as any).logo_url || null,
         }
       : null,
   });

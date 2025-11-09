@@ -22,6 +22,8 @@ export default function AdminPage() {
   }, []);
   const [file, setFile] = useState<File | null>(null);
   const [previousImageUrl, setPreviousImageUrl] = useState<string | null>(null);
+  const [previousLogoUrl, setPreviousLogoUrl] = useState<string | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   // Cropper state
   const [cropOpen, setCropOpen] = useState(false);
   const [crop, setCrop] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -134,6 +136,7 @@ export default function AdminPage() {
           if (s) {
             if (s.primaryColor) setPrimaryColor(s.primaryColor);
             // accent/background are auto-derived from primary
+            if ((s as any).logoUrl) setPreviousLogoUrl((s as any).logoUrl);
           }
         } catch {}
       } catch {
@@ -222,6 +225,7 @@ export default function AdminPage() {
 
     try {
       let imageUrl: string | undefined = previousImageUrl || undefined;
+      let logoUrl: string | undefined = previousLogoUrl || undefined;
       if (file) {
         try {
           let uploadFile: File = file;
@@ -249,6 +253,26 @@ export default function AdminPage() {
           setMessage('Upload failed — keeping previous image.');
         }
       }
+      // Handle logo upload (no crop)
+      if (logoFile) {
+        try {
+          const fd = new FormData();
+          fd.append('file', logoFile);
+          fd.append('folder', 'logos');
+          const up = await fetch('/api/upload', { method: 'POST', body: fd });
+          if (up.ok) {
+            const uploaded = await up.json();
+            const newUrl = uploaded.publicUrl || undefined;
+            // Delete old logo if exists and different
+            if (previousLogoUrl && newUrl && newUrl !== previousLogoUrl) {
+              try {
+                await fetch('/api/upload/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ publicUrl: previousLogoUrl, bucket: uploaded.bucket || 'uploads' }) });
+              } catch {}
+            }
+            logoUrl = newUrl;
+          }
+        } catch {}
+      }
 
       const body = {
         perGram: Number(perGram),
@@ -272,13 +296,13 @@ export default function AdminPage() {
         const j = await res.json().catch(() => ({}));
         throw new Error(j.error || 'Failed to save rate');
       }
-      // Save color settings (non-blocking) — derive from primary
+      // Save color/settings (non-blocking) — derive from primary
       try {
         const derived = deriveFromPrimary(primaryColor);
         await fetch('/api/settings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ primaryColor, accentColor: derived.accent, bgColor: derived.bg }),
+          body: JSON.stringify({ primaryColor, accentColor: derived.accent, bgColor: derived.bg, logoUrl }),
         });
       } catch {}
       // Navigate to main page after successful save
@@ -437,6 +461,42 @@ export default function AdminPage() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Logo Upload */}
+            <div className="group">
+              <label className="block text-amber-300 text-sm font-semibold mb-2 tracking-wide">
+                <span className="inline-flex items-center gap-2"><FiImage /> Logo Image</span>
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] || null;
+                  setLogoFile(f);
+                }}
+                className="w-full rounded-xl bg-black/40 border border-amber-500/30 p-4 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-amber-500 file:text-white hover:file:bg-amber-400 transition-all duration-300"
+              />
+              <div className="mt-2 flex items-center gap-3">
+                {(previousLogoUrl || logoFile) ? (
+                  <div className="w-16 h-16 rounded-lg overflow-hidden border border-amber-500/30 bg-black/30 flex items-center justify-center">
+                    <img src={logoFile ? URL.createObjectURL(logoFile) : (previousLogoUrl as string)} alt="Logo preview" className="w-full h-full object-contain" />
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-lg overflow-hidden border border-white/10 bg-black/30 flex items-center justify-center text-amber-200/60 text-xs">
+                    No logo
+                  </div>
+                )}
+                {previousLogoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => { setPreviousLogoUrl(null); setLogoFile(null); }}
+                    className="px-3 py-2 rounded-lg text-xs font-semibold border border-white/10 text-amber-200 hover:bg-white/5 transition"
+                  >
+                    Remove Logo
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
