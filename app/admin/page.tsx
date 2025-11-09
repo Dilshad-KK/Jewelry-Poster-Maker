@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FiLock, FiDollarSign, FiAward, FiCalendar, FiImage, FiMapPin, FiShoppingBag, FiHome, FiLogOut, FiSave, FiScissors, FiSliders } from 'react-icons/fi';
 import Link from 'next/link';
 import Cropper from 'react-easy-crop';
 
@@ -41,6 +42,69 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string>("");
 
+  // Derive accent/background from primary (show but don't allow manual change)
+  const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
+  const hexToRgb = (hex: string) => {
+    const v = hex.replace('#','');
+    const s = v.length === 3 ? v.split('').map(c=>c+c).join('') : v;
+    const n = parseInt(s, 16);
+    const r = (n >> 16) & 255; const g = (n >> 8) & 255; const b = n & 255;
+    return { r, g, b };
+  };
+  const rgbToHsl = ({r,g,b}:{r:number;g:number;b:number}) => {
+    r/=255; g/=255; b/=255;
+    const max=Math.max(r,g,b), min=Math.min(r,g,b);
+    let h=0,s=0; const l=(max+min)/2;
+    if(max!==min){
+      const d=max-min;
+      s = l>0.5 ? d/(2-max-min) : d/(max+min);
+      switch(max){
+        case r: h=(g-b)/d + (g<b?6:0); break;
+        case g: h=(b-r)/d + 2; break;
+        case b: h=(r-g)/d + 4; break;
+      }
+      h/=6;
+    }
+    return {h, s, l};
+  };
+  const hslToHex = (h:number,s:number,l:number) => {
+    const hue2rgb=(p:number,q:number,t:number)=>{
+      if(t<0) t+=1; if(t>1) t-=1;
+      if(t<1/6) return p+(q-p)*6*t;
+      if(t<1/2) return q;
+      if(t<2/3) return p+(q-p)*(2/3 - t)*6;
+      return p;
+    };
+    let r:number,g:number,b:number;
+    if(s===0){ r=g=b=l; }
+    else{
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      r = hue2rgb(p,q,h+1/3); g = hue2rgb(p,q,h); b = hue2rgb(p,q,h-1/3);
+    }
+    const toHex=(x:number)=>{ const v=Math.round(x*255).toString(16).padStart(2,'0'); return v; };
+    return `#${toHex(r!)}${toHex(g!)}${toHex(b!)}`;
+  };
+  const deriveFromPrimary = (hex: string) => {
+    try {
+      const hsl = rgbToHsl(hexToRgb(hex));
+      const accentL = clamp01(hsl.l + 0.20);
+      const accentS = clamp01(hsl.s * 0.9 + 0.05);
+      const bgL = clamp01(hsl.l * 0.22);
+      const bgS = clamp01(hsl.s * 0.9 + 0.05);
+      return {
+        accent: hslToHex(hsl.h, accentS, accentL),
+        bg: hslToHex(hsl.h, bgS, bgL),
+      };
+    } catch { return { accent: '#fbbf24', bg: '#451a03' }; }
+  };
+  // Keep accent/bg derived whenever primary changes
+  useEffect(() => {
+    const d = deriveFromPrimary(primaryColor);
+    setAccentColor(d.accent);
+    setBgColor(d.bg);
+  }, [primaryColor]);
+
   useEffect(() => {
     const now = new Date();
     const tzAdjusted = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
@@ -67,8 +131,7 @@ export default function AdminPage() {
           const s = sjson?.settings;
           if (s) {
             if (s.primaryColor) setPrimaryColor(s.primaryColor);
-            if (s.accentColor) setAccentColor(s.accentColor);
-            if ((s as any).bgColor) setBgColor((s as any).bgColor);
+            // accent/background are auto-derived from primary
           }
         } catch {}
       } catch {
@@ -207,12 +270,13 @@ export default function AdminPage() {
         const j = await res.json().catch(() => ({}));
         throw new Error(j.error || 'Failed to save rate');
       }
-      // Save color settings (non-blocking)
+      // Save color settings (non-blocking) — derive from primary
       try {
+        const derived = deriveFromPrimary(primaryColor);
         await fetch('/api/settings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ primaryColor, accentColor, bgColor }),
+          body: JSON.stringify({ primaryColor, accentColor: derived.accent, bgColor: derived.bg }),
         });
       } catch {}
       setMessage('✅ Saved successfully! View at /');
@@ -256,7 +320,7 @@ export default function AdminPage() {
           <div className="space-y-4">
             <div className="group">
               <label className="block text-amber-300 text-sm font-semibold mb-2 tracking-wide">
-                💰 Per Gram (INR)
+                <span className="inline-flex items-center gap-2"><FiDollarSign /> Per Gram (INR)</span>
               </label>
               <input
                 type="number"
@@ -271,7 +335,7 @@ export default function AdminPage() {
 
             <div className="group">
               <label className="block text-amber-300 text-sm font-semibold mb-2 tracking-wide">
-                👑 Per Sovereign (INR)
+                <span className="inline-flex items-center gap-2"><FiAward /> Per Sovereign (INR)</span>
               </label>
               <input
                 type="number"
@@ -289,7 +353,7 @@ export default function AdminPage() {
           <div className="space-y-4">
             <div className="group">
               <label className="block text-amber-300 text-sm font-semibold mb-2 tracking-wide">
-                🏪 Shop Name
+                <span className="inline-flex items-center gap-2"><FiShoppingBag /> Shop Name</span>
               </label>
               <input
                 type="text"
@@ -303,7 +367,7 @@ export default function AdminPage() {
 
             <div className="group">
               <label className="block text-amber-300 text-sm font-semibold mb-2 tracking-wide">
-                📍 Shop Address
+                <span className="inline-flex items-center gap-2"><FiMapPin /> Shop Address</span>
               </label>
               <input
                 type="text"
@@ -320,7 +384,7 @@ export default function AdminPage() {
         <div className="space-y-4">
             <div className="group">
               <label htmlFor="rate-date" className="block text-amber-300 text-sm font-semibold mb-2 tracking-wide">
-                📅 Date
+                <span className="inline-flex items-center gap-2"><FiCalendar /> Date</span>
               </label>
               <input
                 id="rate-date"
@@ -339,7 +403,7 @@ export default function AdminPage() {
 
             <div className="group">
               <label className="block text-amber-300 text-sm font-semibold mb-2 tracking-wide">
-                🖼️ Background Image
+                <span className="inline-flex items-center gap-2"><FiImage /> Background Image</span>
               </label>
               <input
                 type="file"
@@ -358,7 +422,7 @@ export default function AdminPage() {
                   disabled={!file}
                   className={`px-3 py-2 rounded-lg text-sm font-semibold border transition ${file ? 'border-amber-500/40 text-amber-200 hover:bg-amber-500/10' : 'border-white/10 text-white/40 cursor-not-allowed'}`}
                 >
-                  ✂️ Adjust Square Crop
+                  <span className="inline-flex items-center gap-2"><FiScissors /> Adjust Square Crop</span>
                 </button>
                 {previousImageUrl && !file && (
                   <span className="text-xs text-amber-200/70">No new image selected — keeping previous image.</span>
@@ -377,7 +441,7 @@ export default function AdminPage() {
 
           {/* Colors */}
           <div className="pt-2">
-            <h3 className="text-amber-300 text-sm font-semibold tracking-wide mb-2">Colors</h3>
+            <h3 className="text-amber-300 text-sm font-semibold tracking-wide mb-2 inline-flex items-center gap-2"><FiSliders /> Colors</h3>
             <div className="grid grid-cols-1 gap-3">
               <div>
                 <label className="block text-amber-100/80 text-xs font-semibold mb-1">Quick Palettes</label>
@@ -386,8 +450,8 @@ export default function AdminPage() {
                     <button
                       key={p.name}
                       type="button"
-                      onClick={() => { setPrimaryColor(p.primary); setAccentColor(p.accent); setBgColor(p.bg); }}
-                      className={`group rounded-xl p-1 border ${primaryColor===p.primary && accentColor===p.accent && bgColor===p.bg ? 'border-amber-400' : 'border-white/10'}`}
+                      onClick={() => { setPrimaryColor(p.primary); }}
+                      className={`group rounded-xl p-1 border ${primaryColor===p.primary ? 'border-amber-400' : 'border-white/10'}`}
                       title={p.name}
                     >
                       <span className="block w-8 h-8 rounded-lg" style={{ background: `linear-gradient(135deg, ${p.primary}, ${p.accent})` }} />
@@ -402,12 +466,12 @@ export default function AdminPage() {
                   <input type="color" value={primaryColor} onChange={(e)=>setPrimaryColor(e.target.value)} className="w-full h-10 rounded-md bg-black/30 border border-white/10" />
                 </div>
                 <div>
-                  <label className="block text-amber-100/80 text-xs font-semibold mb-1">Accent</label>
-                  <input type="color" value={accentColor} onChange={(e)=>setAccentColor(e.target.value)} className="w-full h-10 rounded-md bg-black/30 border border-white/10" />
+                  <label className="block text-amber-100/80 text-xs font-semibold mb-1 inline-flex items-center gap-1">Accent <FiLock className="opacity-80" /></label>
+                  <input type="color" value={accentColor} readOnly disabled className="w-full h-10 rounded-md bg-black/20 border border-white/10 cursor-not-allowed opacity-70" title="Auto from Primary (locked)" />
                 </div>
                 <div>
-                  <label className="block text-amber-100/80 text-xs font-semibold mb-1">Background</label>
-                  <input type="color" value={bgColor} onChange={(e)=>setBgColor(e.target.value)} className="w-full h-10 rounded-md bg-black/30 border border-white/10" />
+                  <label className="block text-amber-100/80 text-xs font-semibold mb-1 inline-flex items-center gap-1">Background <FiLock className="opacity-80" /></label>
+                  <input type="color" value={bgColor} readOnly disabled className="w-full h-10 rounded-md bg-black/20 border border-white/10 cursor-not-allowed opacity-70" title="Auto from Primary (locked)" />
                 </div>
               </div>
             </div>
@@ -427,7 +491,8 @@ export default function AdminPage() {
                 </>
               ) : (
                 <>
-                  <span>💾 Save Rate</span>
+                  <FiSave />
+                  <span>Save Rate</span>
                 </>
               )}
             </button>
@@ -449,14 +514,14 @@ export default function AdminPage() {
             href="/"
             className="w-full inline-flex items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white py-3 font-semibold hover:bg-white/15 transition-all duration-300"
           >
-            🏠 Go to Main Page
+            <span className="inline-flex items-center gap-2"><FiHome /> Go to Main Page</span>
           </Link>
         </div>
 
         {/* Logout Button */}
         <form action="/api/auth/logout" method="POST" className="mt-3">
-          <button className="w-full rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white py-3 font-semibold hover:bg-white/15 transition-all duration-300">
-            🔒 Logout
+          <button className="w-full rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white py-3 font-semibold hover:bg-white/15 transition-all duration-300 inline-flex items-center justify-center gap-2">
+            <FiLogOut /> Logout
           </button>
         </form>
 
