@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { FiLock, FiDollarSign, FiAward, FiCalendar, FiImage, FiMapPin, FiShoppingBag, FiHome, FiLogOut, FiSave, FiScissors, FiSliders } from 'react-icons/fi';
 import Link from 'next/link';
 import Cropper from 'react-easy-crop';
 
 export default function AdminPage() {
+  const router = useRouter();
   const [perGram, setPerGram] = useState<string>("");
   const [perSovereign, setPerSovereign] = useState<string>("");
   const [shopName, setShopName] = useState<string>("");
@@ -279,10 +281,9 @@ export default function AdminPage() {
           body: JSON.stringify({ primaryColor, accentColor: derived.accent, bgColor: derived.bg }),
         });
       } catch {}
-      setMessage('✅ Saved successfully! View at /');
-      setPerGram("");
-      setPerSovereign("");
-      setFile(null);
+      // Navigate to main page after successful save
+      router.push('/');
+      return;
     } catch (err: any) {
       setMessage(err?.message || 'Something went wrong');
     } finally {
@@ -415,7 +416,7 @@ export default function AdminPage() {
                 }}
                 className="w-full rounded-xl bg-black/40 border border-amber-500/30 p-4 text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-amber-500 file:text-white hover:file:bg-amber-400 transition-all duration-300"
               />
-              <div className="mt-2 flex items-center gap-2">
+              <div className="mt-2 flex flex-col sm:flex-row items-start sm:items-center gap-2">
                 <button
                   type="button"
                   onClick={openCropper}
@@ -425,7 +426,7 @@ export default function AdminPage() {
                   <span className="inline-flex items-center gap-2"><FiScissors /> Adjust Square Crop</span>
                 </button>
                 {previousImageUrl && !file && (
-                  <span className="text-xs text-amber-200/70">No new image selected — keeping previous image.</span>
+                  <span className="text-xs text-amber-200/80 sm:mt-0 mt-1 text-center sm:text-left">No new image selected — keeping previous image.</span>
                 )}
               </div>
               {croppedDataUrl && (
@@ -460,17 +461,19 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-start">
                 <div>
-                  <label className="block text-amber-100/80 text-xs font-semibold mb-1">Primary</label>
+                  <label className="block text-amber-100/80 text-xs font-semibold mb-1 inline-flex items-center gap-1 whitespace-nowrap">
+                    Primary <FiLock className="opacity-0" />
+                  </label>
                   <input type="color" value={primaryColor} onChange={(e)=>setPrimaryColor(e.target.value)} className="w-full h-10 rounded-md bg-black/30 border border-white/10" />
                 </div>
                 <div>
-                  <label className="block text-amber-100/80 text-xs font-semibold mb-1 inline-flex items-center gap-1">Accent <FiLock className="opacity-80" /></label>
+                  <label className="block text-amber-100/80 text-xs font-semibold mb-1 inline-flex items-center gap-1 whitespace-nowrap">Accent <FiLock className="opacity-80" /></label>
                   <input type="color" value={accentColor} readOnly disabled className="w-full h-10 rounded-md bg-black/20 border border-white/10 cursor-not-allowed opacity-70" title="Auto from Primary (locked)" />
                 </div>
                 <div>
-                  <label className="block text-amber-100/80 text-xs font-semibold mb-1 inline-flex items-center gap-1">Background <FiLock className="opacity-80" /></label>
+                  <label className="block text-amber-100/80 text-xs font-semibold mb-1 inline-flex items-center gap-1 whitespace-nowrap">Background <FiLock className="opacity-80" /></label>
                   <input type="color" value={bgColor} readOnly disabled className="w-full h-10 rounded-md bg-black/20 border border-white/10 cursor-not-allowed opacity-70" title="Auto from Primary (locked)" />
                 </div>
               </div>
