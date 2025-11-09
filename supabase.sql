@@ -33,8 +33,17 @@ insert into storage.buckets (id, name, public)
 values ('uploads', 'uploads', true)
 on conflict (id) do nothing;
 
+-- 4) Site settings for theme/colors
+create table if not exists public.site_settings (
+  id text primary key default 'default',
+  theme text check (theme in ('classic','overlay')) default 'classic',
+  primary_color text,
+  accent_color text,
+  bg_color text,
+  updated_at timestamptz not null default now()
+);
+
 -- 3) RLS (optional; API uses service role)
 -- If you want to allow anon read of latest rate without service role, enable RLS and set policies:
 -- alter table public.rates enable row level security;
 -- create policy "Allow read to anon" on public.rates for select to public using (true);
-

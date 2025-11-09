@@ -2,6 +2,8 @@
 export const dynamic = "force-static";
 import { useEffect, useRef, useState } from "react";
 import * as htmlToImage from "html-to-image";
+import ClassicCard from "@/components/ClassicCard";
+// import OverlayCard from "@/components/OverlayCard"; // Theme/layout deferred
 
 export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -20,6 +22,8 @@ export default function Home() {
   const [imageLoading, setImageLoading] = useState<boolean>(false);
   const [exporting, setExporting] = useState<boolean>(false);
   const [hideShare, setHideShare] = useState<boolean>(false);
+  // Defer theme/layout: keep simple defaults
+  const [settings, setSettings] = useState<{ theme: 'classic' | 'overlay'; primaryColor?: string | null; accentColor?: string | null; bgColor?: string | null }>({ theme: 'classic', primaryColor: '#fbbf24', accentColor: null, bgColor: '#451a03' });
 
   const exportCard = async () => {
     const node = cardRef.current;
@@ -100,7 +104,17 @@ export default function Home() {
         console.warn('Failed to fetch rate', e);
       }
     };
+    // Load color settings (theme still fixed to classic)
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/settings', { cache: 'no-store' });
+        const json = await res.json();
+        const s = json?.settings;
+        if (s) setSettings((prev) => ({ ...prev, primaryColor: s.primaryColor ?? prev.primaryColor, accentColor: s.accentColor ?? prev.accentColor, bgColor: (s as any).bgColor ?? prev.bgColor }));
+      } catch {}
+    };
     fetchRate();
+    fetchSettings();
   }, []);
 
   useEffect(() => {
@@ -300,7 +314,10 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="relative min-h-[100dvh] w-full bg-gradient-to-br from-gray-950 via-black to-amber-950 flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+    <main
+      className="relative min-h-[100dvh] w-full bg-gradient-to-br from-gray-950 via-black to-amber-950 flex items-center justify-center px-4 py-2 sm:px-6 overflow-hidden"
+      style={{ backgroundImage: `linear-gradient(to bottom right, #0b0b0b, ${settings.bgColor || '#451a03'})` }}
+    >
       {/* Falling gold particles canvas */}
       <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 z-0" />
 
@@ -310,150 +327,28 @@ export default function Home() {
         <div className="absolute -top-20 -right-20 w-60 h-60 bg-amber-500/10 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-amber-600/10 rounded-full blur-3xl"></div>
         
-        {/* Main Card */}
-        <div ref={cardRef} className="relative bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl rounded-3xl border border-amber-500/20 shadow-2xl overflow-hidden">
-          {/* Share button (top-right) */}
-          <button
-            ref={shareBtnRef}
-            onClick={exportCard}
-            aria-label="Share image"
-            className={`absolute top-2 right-2 z-30 inline-flex items-center justify-center rounded-full bg-amber-500 text-black shadow-lg hover:scale-105 active:scale-95 transition-transform duration-150 ${hideShare ? "opacity-0 pointer-events-none" : "opacity-100"}`}
-            style={{ width: 36, height: 36 }}
-            title="Share / Save image"
-            disabled={exporting}
-          >
-            {exporting ? (
-              <span className="block w-4 h-4 rounded-full border-2 border-black/70 border-t-transparent animate-spin" />
-            ) : (
-              // Filled share icon (custom SVG), golden button with black icon for contrast
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7a3.048 3.048 0 0 0 0-1.39l7.05-4.11A2.99 2.99 0 1 0 14 4a2.99 2.99 0 0 0 .04.49L7 8.6A3 3 0 1 0 7 15.4l7.04 4.11c-.02.16-.04.32-.04.49a3 3 0 1 0 3-3.92z" />
-              </svg>
-            )}
-          </button>
-          
-          {/* Top Decorative Strip */}
-          <div className="h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
-          {/* Front particles overlay within card */}
-          <canvas ref={frontCanvasRef} className="pointer-events-none absolute inset-0 z-10" />
+        {/* Main Card (componentized) — theme switch deferred */}
+        <ClassicCard
+          rate={rate}
+          settings={settings}
+          displayImg={displayImg}
+          imageLoading={imageLoading}
+          cardRef={cardRef}
+          frontCanvasRef={frontCanvasRef}
+          exporting={exporting}
+          hideShare={hideShare}
+          onShare={exportCard}
+        />
 
-          <div className="relative z-20 flex flex-col items-center space-y-4 p-4 sm:space-y-6 sm:p-6">
-            
-            {/* Logo */}
-            <div className="mt-2 sm:mt-4">
-              <img
-                src="/logo.jpg"
-                alt="KGP Gold"
-                className="h-14 sm:h-16 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]"
-              />
-            </div>
+        {/* Legacy card removed */}
+        {false && (<div>legacy</div>)}
+        {/* Duplicate inline card removed during theme/layout defer */}
+      </div>
 
-            {/* Header */}
-            <div className="text-center space-y-2 sm:space-y-3">
-              {/* <div className="inline-flex items-center space-x-2 text-amber-400/80 text-xs font-semibold tracking-widest uppercase">
-                <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"></div>
-                <span>Live Gold Rates</span>
-              </div> */}
-              
-              <h1 className="text-2xl font-bold tracking-tight font-serif">
-                <span className="text-white">Today's</span>{' '}
-                <span className="text-transparent bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text">
-                  Gold Rate
-                </span>
-              </h1>
-              
-              <div className="inline-flex items-center space-x-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-4 py-1.5">
-                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-amber-100 font-semibold text-sm">
-                  {(() => {
-                    const d = rate?.date ? new Date(rate.date) : new Date();
-                    const day = String(d.getDate()).padStart(2, '0');
-                    const month = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
-                    const year = d.getFullYear();
-                    return `${day} / ${month} / ${year}`;
-                  })()}
-                </span>
-              </div>
-            </div>
-
-            {/* Jewellery Image - square within constraints */}
-            <div className="relative w-full max-w-[260px] sm:max-w-xs">
-              <div className="absolute -inset-3 bg-amber-500/10 rounded-2xl blur-xl"></div>
-              <div className="relative rounded-2xl overflow-hidden border border-amber-500/30 shadow-2xl">
-                <div className="relative w-full pt-[100%]">{/* 1:1 square */}
-                  {displayImg ? (
-                    <img
-                      src={displayImg}
-                      alt="Gold Jewellery"
-                      className="absolute inset-0 w-full h-full object-cover transform hover:scale-105 transition-transform duration-700"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
-                      <span className="text-amber-200/60 text-xs">No image</span>
-                    </div>
-                  )}
-                  {imageLoading && (
-                    <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center">
-                      <div className="w-8 h-8 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                </div>
-              </div>
-            </div>
-
-            {/* Price Cards: two per row on mobile */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 w-full">
-              {/* Per Gram */}
-              <div className="group relative">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl blur opacity-30 group-hover:opacity-70 transition duration-300"></div>
-                <div className="relative bg-gray-900/80 backdrop-blur-sm border border-amber-500/20 rounded-xl p-3 sm:p-4 text-center group-hover:border-amber-500/40 transition-all duration-300">
-                  <div className="text-2xl font-black text-amber-300 mb-1">
-                    ₹ {rate?.per_gram?.toLocaleString('en-IN') ?? '—'}
-                  </div>
-                  <div className="text-amber-100/80 text-xs font-semibold uppercase tracking-wider">
-                    Per Gram
-                  </div>
-                </div>
-              </div>
-
-              {/* Per Sovereign */}
-              <div className="group relative">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl blur opacity-30 group-hover:opacity-70 transition duration-300"></div>
-                <div className="relative bg-gray-900/80 backdrop-blur-sm border border-amber-500/20 rounded-xl p-3 sm:p-4 text-center group-hover:border-amber-500/40 transition-all duration-300">
-                  <div className="text-2xl font-black text-amber-300 mb-1">
-                    ₹ {rate?.per_sovereign?.toLocaleString('en-IN') ?? '—'}
-                  </div>
-                  <div className="text-amber-100/80 text-xs font-semibold uppercase tracking-wider">
-                    Per Sovereign
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Shop Info */}
-            <div className="text-center w-full">
-              <p className="text-amber-200/90 font-medium tracking-wide bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl px-4 py-2 text-sm">
-                🏛️ {rate?.shop_name || 'KGP Gold, Mangalya Complex'}<br />
-                <span className="text-amber-100/70 text-xs">{rate?.shop_address || 'Main Road, Koduvally'}</span>
-              </p>
-            </div>
-
-            {/* CTA removed in favor of share icon */}
-
-            {/* Accent Elements removed to fit within 100dvh */}
-
-          </div>
-
-          {/* Bottom Decorative Strip */}
-          <div className="h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
-        </div>
-
-        {/* Floating Elements */}
+      {/* Floating Elements */}
         <div className="absolute top-2 right-2 w-3 h-3 bg-amber-400 rounded-full opacity-60 animate-bounce"></div>
         <div className="absolute bottom-2 left-2 w-2 h-2 bg-amber-300 rounded-full opacity-40 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-        
-      </div>
+      
     </main>
   );
 }
