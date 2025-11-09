@@ -71,13 +71,9 @@ export default function OverlayCard({ rate, settings, displayImg, imageLoading, 
       )}
 
       <div className="relative z-20 flex flex-col items-center space-y-4 p-4 sm:space-y-6 sm:p-6">
-        {/* Logo */}
+        {/* Logo (fallback to local /logo.jpg for testing) */}
         <div className="mt-2 sm:mt-4">
-          {settings.logoUrl ? (
-            <img crossOrigin="anonymous" src={settings.logoUrl} alt="Logo" className="h-14 sm:h-16 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]" />
-          ) : (
-            <div className="h-14 sm:h-16 w-16 rounded-md bg-white/10 border border-white/10 flex items-center justify-center text-white/70 text-xs">Logo</div>
-          )}
+          <img crossOrigin="anonymous" src={settings.logoUrl || "/logo.jpg"} alt="Logo" className="h-14 sm:h-16 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]" />
         </div>
 
         {/* Image with overlays */}
