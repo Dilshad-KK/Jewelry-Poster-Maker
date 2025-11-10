@@ -122,7 +122,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <meta name="application-name" content="Gp Gold" />
         <meta name="apple-mobile-web-app-title" content="Gp Gold" />
         <link rel="manifest" href="/manifest.webmanifest" />
-        <link rel="apple-touch-icon" href="/logo_192*192.png" />
+        <link rel="apple-touch-icon" href="/icons/apple-icon-180.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         {/* iOS Splash Screens (light and dark) */}

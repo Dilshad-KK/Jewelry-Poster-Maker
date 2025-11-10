@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import { FiLoader } from "react-icons/fi";
 
 type Rate = {
   date?: string;
@@ -148,16 +149,27 @@ export default function ClassicCard({
       )}
 
       <div className="relative z-20 flex flex-col items-center space-y-2 p-3 sm:p-3">
-        {/* Logo */}
+        {/* Logo with loading indicator */}
         {settings.logoUrl && (
-          <div className="mt-1">
+          <div className="mt-1 relative h-12 sm:h-14 flex items-center justify-center">
             <img
               src={settings.logoUrl}
               alt="Logo"
               crossOrigin="anonymous"
               decoding="sync"
-              className="h-12 sm:h-14 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]"
+              onLoad={(e) => {
+                const el = e.currentTarget as HTMLImageElement;
+                el.style.opacity = "1";
+              }}
+              onError={(e) => {
+                const el = e.currentTarget as HTMLImageElement;
+                el.style.opacity = "1";
+              }}
+              className="h-12 sm:h-14 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] opacity-0 transition-opacity duration-300"
             />
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <FiLoader className="text-amber-300 animate-spin" size={18} />
+            </div>
           </div>
         )}
 
