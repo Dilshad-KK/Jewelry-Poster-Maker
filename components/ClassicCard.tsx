@@ -28,7 +28,6 @@ type Props = {
   exporting: boolean;
   hideShare: boolean;
   onShare: () => void | Promise<void>;
-  onSave?: () => void | Promise<void>;
   hideFrontCanvas?: boolean;
 };
 
@@ -42,7 +41,6 @@ export default function ClassicCard({
   exporting,
   hideShare,
   onShare,
-  onSave,
   hideFrontCanvas,
 }: Props) {
   const hexToRgba = (hex: string, alpha: number) => {
@@ -132,40 +130,6 @@ export default function ClassicCard({
           </svg>
         )}
       </button>
-
-      {/* Save button */}
-      {onSave && (
-        <button
-          onClick={onSave}
-          aria-label="Download image"
-          className={`absolute top-[44px] right-2 z-30 inline-flex items-center justify-center rounded-full text-black shadow-lg transition-transform duration-150 ${
-            hideShare
-              ? "opacity-0 pointer-events-none"
-              : "opacity-100 hover:scale-105 active:scale-95"
-          }`}
-          style={{
-            width: 34,
-            height: 34,
-            backgroundColor: settings.primaryColor || "#fbbf24",
-          }}
-          title="Download image"
-          disabled={exporting}
-        >
-          {exporting ? (
-            <span className="block w-4 h-4 rounded-full border-2 border-black/70 border-t-transparent animate-spin" />
-          ) : (
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path d="M12 3a1 1 0 0 1 1 1v8.586l2.293-2.293a1 1 0 1 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4a1 1 0 0 1 1.414-1.414L11 12.586V4a1 1 0 0 1 1-1zm-7 14a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1z" />
-            </svg>
-          )}
-        </button>
-      )}
 
       {/* Top strip */}
       <div

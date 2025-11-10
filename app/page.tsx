@@ -123,46 +123,6 @@ export default function Home() {
     }
   };
 
-  // Explicit save to device (uses File System Access API when available)
-  const saveCard = async () => {
-    if (exporting) return;
-    const node = cardRef.current;
-    if (!node) return;
-    try {
-      setExporting(true);
-      setHideShare(true);
-      setHideFront(true);
-      const { dataUrl, file, name } = await generateCardPng();
-
-      const anyWin = window as any;
-      if (anyWin.showSaveFilePicker) {
-        try {
-          const handle = await anyWin.showSaveFilePicker({
-            suggestedName: name,
-            types: [{ description: "PNG Image", accept: { "image/png": [".png"] } }],
-          });
-          const writable = await handle.createWritable();
-          await writable.write(await file.arrayBuffer());
-          await writable.close();
-          return;
-        } catch {
-          // user canceled or failed; fall back to download
-        }
-      }
-
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = name;
-      a.click();
-    } catch (e) {
-      console.error("Save failed", e);
-      alert("Save failed: " + (e instanceof Error ? e.message : "unknown"));
-    } finally {
-      setHideShare(false);
-      setHideFront(false);
-      setExporting(false);
-    }
-  };
 
   /**
    * 🟡 Fetch rate + image + settings
@@ -318,7 +278,6 @@ export default function Home() {
           exporting={exporting}
           hideShare={hideShare}
           onShare={exportCard}
-          onSave={saveCard}
           hideFrontCanvas={hideFront}
         />
       </div>

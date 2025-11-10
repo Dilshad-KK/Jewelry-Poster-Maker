@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gp Gold Splash</title>
+    <style>
+      html, body { height: 100%; margin: 0; }
+      body {
+        background: #0b0b0b; /* match theme_color */
+        color: #fbbf24;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      }
+      .wrap {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12vh 12vw; /* generous padding to avoid edge crop */
+        box-sizing: border-box;
+      }
+      .logo {
+        max-width: 60vw;
+        max-height: 60vh;
+        width: 512px;
+        height: auto;
+        object-fit: contain;
+        filter: drop-shadow(0 6px 24px rgba(0,0,0,0.55));
+      }
+      .ver {
+        position: absolute;
+        bottom: 3vh;
+        right: 4vw;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        color: rgba(255, 204, 64, 0.85);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <img class="logo" src="/logo_512*512.png" alt="Gp Gold" />
+    </div>
+    <div class="ver">v0.1.0</div>
+  </body>
+  </html>
+
