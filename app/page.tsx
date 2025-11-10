@@ -44,73 +44,67 @@ export default function Home() {
     logoUrl: null as string | null,
   });
 
+  // Generate PNG data and file for the current card
+  const generateCardPng = async () => {
+    const node = cardRef.current;
+    if (!node) throw new Error("No card node");
+    // wait until all images are loaded
+    const imgs = node.querySelectorAll("img");
+    await Promise.all(
+      Array.from(imgs).map(
+        (img) =>
+          new Promise<void>((res) => {
+            if (img.complete) return res();
+            img.onload = () => res();
+            img.onerror = () => res();
+          })
+      )
+    );
+    await new Promise((r) => setTimeout(r, 150));
+
+    let dataUrl: string;
+    try {
+      dataUrl = await htmlToImage.toPng(node, {
+        cacheBust: true,
+        pixelRatio: Math.min(3, (window.devicePixelRatio || 2) * 1.25),
+        quality: 1,
+        backgroundColor: "#000000",
+        fetchRequestInit: { mode: "cors", credentials: "omit" },
+        style: { transform: "none", transformOrigin: "top left", filter: "none" },
+      });
+    } catch {
+      dataUrl = await htmlToImage.toPng(node, {
+        cacheBust: true,
+        pixelRatio: Math.min(2.25, window.devicePixelRatio || 2),
+        backgroundColor: "#000000",
+        fetchRequestInit: { mode: "cors", credentials: "omit" },
+        style: { transform: "none", transformOrigin: "top left", filter: "none" },
+      });
+    }
+    const base64Data = dataUrl.split(",")[1];
+    const byteChars = atob(base64Data);
+    const byteNums = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
+    const blob = new Blob([new Uint8Array(byteNums)], { type: "image/png" });
+    const date = new Date();
+    const name = `kgp-gold-${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}.png`;
+    const file = new File([blob], name, { type: "image/png" });
+    return { dataUrl, file, name };
+  };
+
   /**
    * 🟡 Export card as PNG (works on iPhone)
    */
   const exportCard = async () => {
+    if (exporting) return;
     const node = cardRef.current;
-    if (!node || exporting) return;
+    if (!node) return;
     try {
       setExporting(true);
       setHideShare(true);
       setHideFront(true);
+      const { dataUrl, file, name } = await generateCardPng();
 
-      // wait until all images are loaded
-      const imgs = node.querySelectorAll("img");
-      await Promise.all(
-        Array.from(imgs).map(
-          (img) =>
-            new Promise<void>((res) => {
-              if (img.complete) return res();
-              img.onload = () => res();
-              img.onerror = () => res();
-            })
-        )
-      );
-      await new Promise((r) => setTimeout(r, 150));
-
-      // use html-to-image
-      // sharper export (retina) with safe fallbacks
-      let dataUrl: string;
-      try {
-        dataUrl = await htmlToImage.toPng(node, {
-          cacheBust: true,
-          pixelRatio: Math.min(3, (window.devicePixelRatio || 2) * 1.25), // up to ~3x
-          quality: 1,
-          backgroundColor: "#000000",
-          fetchRequestInit: { mode: "cors", credentials: "omit" },
-          style: {
-            transform: "none",       // avoid extra scaling blur
-            transformOrigin: "top left",
-            filter: "none",          // prevent Safari filter artifacts
-          },
-        });
-      } catch {
-        // iOS low-memory fallback
-        dataUrl = await htmlToImage.toPng(node, {
-          cacheBust: true,
-          pixelRatio: Math.min(2.25, window.devicePixelRatio || 2),
-          backgroundColor: "#000000",
-          fetchRequestInit: { mode: "cors", credentials: "omit" },
-          style: { transform: "none", transformOrigin: "top left", filter: "none" },
-        });
-      }
-
-      // convert safely (Safari compatible)
-      const base64Data = dataUrl.split(",")[1];
-      const byteChars = atob(base64Data);
-      const byteNums = new Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) {
-        byteNums[i] = byteChars.charCodeAt(i);
-      }
-      const blob = new Blob([new Uint8Array(byteNums)], { type: "image/png" });
-      const date = new Date();
-      const name = `kgp-gold-${date.getFullYear()}${String(
-        date.getMonth() + 1
-      ).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}.png`;
-      const file = new File([blob], name, { type: "image/png" });
-
-      // share or download
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: "KGP Gold" });
       } else {
@@ -122,6 +116,47 @@ export default function Home() {
     } catch (e) {
       console.error("Export failed", e);
       alert("Export failed: " + (e instanceof Error ? e.message : "unknown"));
+    } finally {
+      setHideShare(false);
+      setHideFront(false);
+      setExporting(false);
+    }
+  };
+
+  // Explicit save to device (uses File System Access API when available)
+  const saveCard = async () => {
+    if (exporting) return;
+    const node = cardRef.current;
+    if (!node) return;
+    try {
+      setExporting(true);
+      setHideShare(true);
+      setHideFront(true);
+      const { dataUrl, file, name } = await generateCardPng();
+
+      const anyWin = window as any;
+      if (anyWin.showSaveFilePicker) {
+        try {
+          const handle = await anyWin.showSaveFilePicker({
+            suggestedName: name,
+            types: [{ description: "PNG Image", accept: { "image/png": [".png"] } }],
+          });
+          const writable = await handle.createWritable();
+          await writable.write(await file.arrayBuffer());
+          await writable.close();
+          return;
+        } catch {
+          // user canceled or failed; fall back to download
+        }
+      }
+
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = name;
+      a.click();
+    } catch (e) {
+      console.error("Save failed", e);
+      alert("Save failed: " + (e instanceof Error ? e.message : "unknown"));
     } finally {
       setHideShare(false);
       setHideFront(false);
@@ -283,6 +318,7 @@ export default function Home() {
           exporting={exporting}
           hideShare={hideShare}
           onShare={exportCard}
+          onSave={saveCard}
           hideFrontCanvas={hideFront}
         />
       </div>

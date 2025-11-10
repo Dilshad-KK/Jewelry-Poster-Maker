@@ -22,22 +22,26 @@ export async function GET() {
     .eq('id', 'default')
     .maybeSingle();
 
+  const headers = { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate', 'Pragma': 'no-cache', 'Expires': '0' };
   if (error) {
     // If table missing, fallback to defaults without failing
-    return NextResponse.json({ settings: null });
+    return NextResponse.json({ settings: null }, { headers });
   }
 
-  return NextResponse.json({
-    settings: data
-      ? {
-          theme: (data.theme as 'classic' | 'overlay') || 'classic',
-          primaryColor: data.primary_color || null,
-          accentColor: data.accent_color || null,
-          bgColor: (data as any).bg_color || null,
-          logoUrl: (data as any).logo_url || null,
-        }
-      : null,
-  });
+  return NextResponse.json(
+    {
+      settings: data
+        ? {
+            theme: (data.theme as 'classic' | 'overlay') || 'classic',
+            primaryColor: data.primary_color || null,
+            accentColor: data.accent_color || null,
+            bgColor: (data as any).bg_color || null,
+            logoUrl: (data as any).logo_url || null,
+          }
+        : null,
+    },
+    { headers }
+  );
 }
 
 export async function POST(req: Request) {

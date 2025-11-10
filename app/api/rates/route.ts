@@ -28,10 +28,16 @@ export async function GET() {
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500, headers: { "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate", Pragma: "no-cache", Expires: "0" } }
+    );
   }
 
-  return NextResponse.json({ rate: data ?? null });
+  return NextResponse.json(
+    { rate: data ?? null },
+    { headers: { "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate", Pragma: "no-cache", Expires: "0" } }
+  );
 }
 
 // POST /api/rates -> upsert today’s rate
