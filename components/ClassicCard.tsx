@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 
 type Rate = {
   date?: string;
@@ -73,6 +74,31 @@ export default function ClassicCard({
         transition: "all 0.3s ease",
       }}
     >
+      {/* Home button (to Admin) */}
+      <Link
+        href="/admin"
+        aria-label="Go to admin"
+        className={`absolute top-2 left-2 z-30 inline-flex items-center justify-center rounded-full text-black shadow-lg transition-transform duration-150 ${
+          hideShare ? "opacity-0 pointer-events-none" : "opacity-100 hover:scale-105 active:scale-95"
+        }`}
+        style={{
+          width: 34,
+          height: 34,
+          backgroundColor: settings.primaryColor || "#fbbf24",
+        }}
+        title="Go to Admin"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M12 3.172 2.293 12.88a1 1 0 0 0 1.414 1.414L5 13.001V20a1 1 0 0 0 1 1h4v-5h4v5h4a1 1 0 0 0 1-1v-6l1.293 1.293a1 1 0 1 0 1.414-1.414L12 3.172z" />
+        </svg>
+      </Link>
+
       {/* Share button */}
       <button
         onClick={onShare}
