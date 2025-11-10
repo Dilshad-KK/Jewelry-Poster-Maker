@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 
 type Rate = {
@@ -43,6 +43,7 @@ export default function ClassicCard({
   onShare,
   hideFrontCanvas,
 }: Props) {
+  const [logoLoaded, setLogoLoaded] = useState(false);
   const hexToRgba = (hex: string, alpha: number) => {
     const h = hex.replace("#", "");
     const bigint = parseInt(
@@ -150,18 +151,26 @@ export default function ClassicCard({
       <div className="relative z-20 flex flex-col items-center space-y-2 p-3 sm:p-3">
         {/* Logo with simple placeholder (no spinner) */}
         <div className="mt-1 relative h-12 sm:h-14 flex items-center justify-center">
-          {/* Placeholder shown until image fades in, or when no logoUrl */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="px-3 py-1.5 rounded-md bg-white/10 border border-white/15 text-amber-200/80 text-xs">Logo</div>
-          </div>
+          {/* Placeholder shown until image loads, or when no logoUrl */}
+          {!logoLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="px-3 py-1.5 rounded-md bg-white/10 border border-white/15 text-amber-200/80 text-xs">Logo</div>
+            </div>
+          )}
           {settings.logoUrl && (
             <img
               src={settings.logoUrl}
               alt="Logo"
               crossOrigin="anonymous"
               decoding="sync"
-              onLoad={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "1"; }}
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "1"; }}
+              onLoad={(e) => {
+                (e.currentTarget as HTMLImageElement).style.opacity = "1";
+                setLogoLoaded(true);
+              }}
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.opacity = "1";
+                setLogoLoaded(true);
+              }}
               className="h-12 sm:h-14 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] opacity-0 transition-opacity duration-300 relative z-10"
             />
           )}
