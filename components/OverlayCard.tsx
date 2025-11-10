@@ -1,5 +1,4 @@
 import React from 'react';
-import { FiLoader } from 'react-icons/fi';
 
 type Rate = {
   date?: string;
@@ -72,19 +71,21 @@ export default function OverlayCard({ rate, settings, displayImg, imageLoading, 
       )}
 
       <div className="relative z-20 flex flex-col items-center space-y-4 p-4 sm:space-y-6 sm:p-6">
-        {/* Logo with loading indicator (fallback to local /logo.jpg for testing) */}
+        {/* Logo placeholder (no spinner). If logoUrl exists, image fades in over placeholder. */}
         <div className="mt-2 sm:mt-4 relative h-14 sm:h-16 flex items-center justify-center">
-          <img
-            crossOrigin="anonymous"
-            src={settings.logoUrl || "/logo.jpg"}
-            alt="Logo"
-            onLoad={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '1'; }}
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '1'; }}
-            className="h-14 sm:h-16 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] opacity-0 transition-opacity duration-300"
-          />
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <FiLoader className="text-amber-300 animate-spin" size={20} />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="px-3 py-1.5 rounded-md bg-white/10 border border-white/15 text-amber-200/80 text-xs">Logo</div>
           </div>
+          { (settings.logoUrl || "/logo.jpg") && (
+            <img
+              crossOrigin="anonymous"
+              src={settings.logoUrl || "/logo.jpg"}
+              alt="Logo"
+              onLoad={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '1'; }}
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '1'; }}
+              className="h-14 sm:h-16 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] opacity-0 transition-opacity duration-300 relative z-10"
+            />
+          )}
         </div>
 
         {/* Image with overlays */}

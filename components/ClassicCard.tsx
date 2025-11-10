@@ -1,6 +1,5 @@
 import React from "react";
 import Link from "next/link";
-import { FiLoader } from "react-icons/fi";
 
 type Rate = {
   date?: string;
@@ -149,29 +148,24 @@ export default function ClassicCard({
       )}
 
       <div className="relative z-20 flex flex-col items-center space-y-2 p-3 sm:p-3">
-        {/* Logo with loading indicator */}
-        {settings.logoUrl && (
-          <div className="mt-1 relative h-12 sm:h-14 flex items-center justify-center">
+        {/* Logo with simple placeholder (no spinner) */}
+        <div className="mt-1 relative h-12 sm:h-14 flex items-center justify-center">
+          {/* Placeholder shown until image fades in, or when no logoUrl */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="px-3 py-1.5 rounded-md bg-white/10 border border-white/15 text-amber-200/80 text-xs">Logo</div>
+          </div>
+          {settings.logoUrl && (
             <img
               src={settings.logoUrl}
               alt="Logo"
               crossOrigin="anonymous"
               decoding="sync"
-              onLoad={(e) => {
-                const el = e.currentTarget as HTMLImageElement;
-                el.style.opacity = "1";
-              }}
-              onError={(e) => {
-                const el = e.currentTarget as HTMLImageElement;
-                el.style.opacity = "1";
-              }}
-              className="h-12 sm:h-14 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] opacity-0 transition-opacity duration-300"
+              onLoad={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "1"; }}
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "1"; }}
+              className="h-12 sm:h-14 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] opacity-0 transition-opacity duration-300 relative z-10"
             />
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <FiLoader className="text-amber-300 animate-spin" size={18} />
-            </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Title */}
         <h1 className="text-center text-xl sm:text-2xl font-bold tracking-tight font-serif text-white drop-shadow-sm leading-tight">
