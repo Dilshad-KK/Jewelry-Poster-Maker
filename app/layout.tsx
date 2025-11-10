@@ -112,9 +112,20 @@ export async function generateMetadata(): Promise<Metadata> {
   } satisfies Metadata;
 }
 
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${cinzel.variable} ${inter.variable}`}>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#0b0b0b" />
+        <meta name="application-name" content="Gp Gold" />
+        <meta name="apple-mobile-web-app-title" content="Gp Gold" />
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="apple-touch-icon" href="/logo_192*192.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      </head>
       <body className="bg-[#1b1b1b] antialiased">{children}</body>
     </html>
   );

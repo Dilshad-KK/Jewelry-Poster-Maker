@@ -160,6 +160,19 @@ export default function AdminPage() {
     };
   }, []);
 
+  // Auto-calculate per sovereign from per gram (8 grams per sovereign)
+  useEffect(() => {
+    const g = Number(perGram);
+    if (!isNaN(g) && perGram !== "") {
+      const s = (g * 8);
+      // Keep two decimal places if there are decimals, otherwise integer
+      const formatted = Number.isInteger(s) ? String(s) : s.toFixed(2);
+      setPerSovereign(formatted);
+    } else {
+      setPerSovereign("");
+    }
+  }, [perGram]);
+
   const onCropComplete = useCallback((_croppedArea: any, pixels: { x: number; y: number; width: number; height: number }) => {
     setCroppedAreaPixels(pixels);
   }, []);
@@ -371,9 +384,9 @@ export default function AdminPage() {
                 type="number"
                 step="0.01"
                 value={perSovereign}
-                onChange={(e) => setPerSovereign(e.target.value)}
+                readOnly
                 className="w-full rounded-xl bg-black/40 border border-amber-500/30 p-4 text-white placeholder-amber-200/50 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-300"
-                placeholder="Enter per sovereign rate"
+                placeholder="Auto-calculated (per gram × 8)"
                 required
               />
             </div>

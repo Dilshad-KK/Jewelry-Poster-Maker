@@ -40,6 +40,7 @@ create table if not exists public.site_settings (
   primary_color text,
   accent_color text,
   bg_color text,
+  logo_url text,
   updated_at timestamptz not null default now()
 );
 
