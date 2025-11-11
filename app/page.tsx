@@ -123,6 +123,62 @@ export default function Home() {
     }
   };
 
+  // Explicit save to device (prefers File System Access API; falls back to download)
+  const saveCard = async () => {
+    if (exporting) return;
+    try {
+      setExporting(true);
+      setHideShare(true);
+      setHideFront(true);
+      const anyWin = window as any;
+      let writable: FileSystemWritableFileStream | null = null;
+      let pickedName: string | null = null;
+      // Call picker immediately to retain user activation
+      if (anyWin.showSaveFilePicker) {
+        try {
+          const handle = await anyWin.showSaveFilePicker({
+            suggestedName: `kgp-gold-${new Date().toISOString().slice(0,10)}.png`,
+            types: [{ description: "PNG Image", accept: { "image/png": [".png"] } }],
+          });
+          writable = await handle.createWritable();
+        } catch (e) {
+          // user canceled or picker not allowed; continue with fallback
+        }
+      }
+
+      const { dataUrl, file, name } = await generateCardPng();
+      pickedName = pickedName || name;
+
+      if (writable) {
+        await writable.write(await file.arrayBuffer());
+        await writable.close();
+        return;
+      }
+
+      // Fallback: force a download via object URL for better compatibility
+      const url = URL.createObjectURL(file);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = pickedName!;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Save failed", e);
+      try {
+        // Last-resort: open image in a new tab (iOS can long-press to save)
+        const { dataUrl } = await generateCardPng();
+        const win = window.open(dataUrl, "_blank");
+        if (!win) alert("Save failed. Please allow popups or long‑press the image to save.");
+      } catch {}
+    } finally {
+      setHideShare(false);
+      setHideFront(false);
+      setExporting(false);
+    }
+  };
+
 
   /**
    * 🟡 Fetch rate + image + settings
@@ -278,6 +334,7 @@ export default function Home() {
           exporting={exporting}
           hideShare={hideShare}
           onShare={exportCard}
+          onSave={saveCard}
           hideFrontCanvas={hideFront}
         />
       </div>

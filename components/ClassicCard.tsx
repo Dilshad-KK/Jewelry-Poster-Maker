@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Link from "next/link";
+import { FiDownload } from "react-icons/fi";
 
 type Rate = {
   date?: string;
@@ -28,6 +29,7 @@ type Props = {
   exporting: boolean;
   hideShare: boolean;
   onShare: () => void | Promise<void>;
+  onSave?: () => void | Promise<void>;
   hideFrontCanvas?: boolean;
 };
 
@@ -41,6 +43,7 @@ export default function ClassicCard({
   exporting,
   hideShare,
   onShare,
+  onSave,
   hideFrontCanvas,
 }: Props) {
   const [logoLoaded, setLogoLoaded] = useState(false);
@@ -104,7 +107,7 @@ export default function ClassicCard({
       <button
         onClick={onShare}
         aria-label="Share image"
-        className={`absolute top-2 right-2 z-30 inline-flex items-center justify-center rounded-full text-black shadow-lg transition-transform duration-150 ${
+        className={`absolute top-2 right-[58px] z-30 inline-flex items-center justify-center rounded-full text-black shadow-lg transition-transform duration-150 ${
           hideShare
             ? "opacity-0 pointer-events-none"
             : "opacity-100 hover:scale-105 active:scale-95"
@@ -131,6 +134,26 @@ export default function ClassicCard({
           </svg>
         )}
       </button>
+
+      {/* Save button (to the right of Share) */}
+      {onSave && (
+        <button
+          onClick={onSave}
+          aria-label="Save image"
+          className={`absolute top-2 right-2 z-30 inline-flex items-center justify-center rounded-full text-black shadow-lg transition-transform duration-150 ${
+            hideShare ? "opacity-0 pointer-events-none" : "opacity-100 hover:scale-105 active:scale-95"
+          }`}
+          style={{ width: 34, height: 34, backgroundColor: settings.primaryColor || "#fbbf24" }}
+          title="Save to gallery"
+          disabled={exporting}
+        >
+          {exporting ? (
+            <span className="block w-4 h-4 rounded-full border-2 border-black/70 border-t-transparent animate-spin" />
+          ) : (
+            <FiDownload size={16} />
+          )}
+        </button>
+      )}
 
       {/* Top strip */}
       <div
