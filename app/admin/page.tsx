@@ -11,7 +11,6 @@ import {
   FiLock,
 } from "react-icons/fi";
 import Cropper from "react-easy-crop";
-import heic2any from "heic2any";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -159,13 +158,27 @@ export default function AdminPage() {
           if (typeof r.per_sovereign === "number")
             setPerSovereign(String(r.per_sovereign));
           if (r.image_url) setPreviousImageUrl(r.image_url);
-          if (r.logo_url) {
-            setPreviousLogoUrl(r.logo_url);
-            setLogoPreviewUrl(r.logo_url);
-          }
         }
       } catch (err) {
         console.error("Fetch failed:", err);
+      }
+
+      // Fetch latest settings to get the logo URL and theme colors for preview
+      try {
+        const sres = await fetch(`/api/settings?t=${Date.now()}`, { cache: "no-store" });
+        const sjson = await sres.json();
+        const settings = sjson?.settings;
+        const logo = settings?.logoUrl as string | null | undefined;
+        if (logo) {
+          setPreviousLogoUrl(logo);
+          // Only set the visible preview if user hasn't picked a new file yet
+          setLogoPreviewUrl((prev) => (prev ? prev : logo));
+        }
+        if (settings?.primaryColor) {
+          setPrimaryColor(settings.primaryColor);
+        }
+      } catch (err) {
+        console.error("Settings fetch failed:", err);
       }
     })();
   }, []);
@@ -235,16 +248,40 @@ export default function AdminPage() {
 
     setImageProcessing(true);
     try {
-      let uploadFile = f;
-      if (f.name.toLowerCase().endsWith(".heic") || f.type.includes("heic")) {
-        const convertedBlob = (await heic2any({ blob: f, toType: "image/png" })) as Blob;
-        uploadFile = new File([convertedBlob], f.name.replace(/\.heic$/i, ".png"), {
-          type: "image/png",
-        });
+      const isHeic =
+        f.name.toLowerCase().endsWith(".heic") || (f.type && f.type.includes("heic"));
+
+      let uploadFile: File = f;
+      let lastError: any = null;
+
+      if (isHeic) {
+        try {
+          const mod = await import("heic2any");
+          const heic2any = (mod as any).default || mod;
+          const convertedBlob = (await heic2any({ blob: f, toType: "image/png" })) as Blob;
+          uploadFile = new File([convertedBlob], f.name.replace(/\.heic$/i, ".png"), {
+            type: "image/png",
+          });
+        } catch (e) {
+          // Client conversion failed; fall back to server conversion endpoint with original file
+          lastError = e;
+          const fd = new FormData();
+          fd.append("file", f);
+          const res = await fetch("/api/convert-upload", { method: "POST", body: fd });
+          const json = await res.json();
+          if (!res.ok || !json.publicUrl) throw new Error(json.error || "Invalid image");
+          const url = json.publicUrl;
+          setPreviousImageUrl(url);
+          setTempImageUrl(url);
+          setCropOpen(true);
+          return; // done via convert endpoint
+        }
       }
+
+      // For non-HEIC or successfully converted HEIC, upload directly
       const fd = new FormData();
       fd.append("file", uploadFile);
-      const res = await fetch("/api/convert-upload", { method: "POST", body: fd });
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
       const json = await res.json();
       if (!res.ok || !json.publicUrl) throw new Error(json.error || "Invalid image");
       const url = json.publicUrl;
@@ -252,7 +289,7 @@ export default function AdminPage() {
       setTempImageUrl(url);
       setCropOpen(true);
     } catch (err) {
-      console.error("HEIC upload failed:", err);
+      console.error("Image upload failed:", err);
       alert("⚠️ Could not process this image. Try JPG/PNG.");
     } finally {
       setImageProcessing(false);
@@ -266,31 +303,81 @@ export default function AdminPage() {
       let imageUrl = previousImageUrl || undefined;
       let logoUrl = previousLogoUrl || undefined;
       if (logoFile) {
-        const fd = new FormData();
-        fd.append("file", logoFile);
-        fd.append("folder", "logos");
-        const res = await fetch("/api/convert-upload", { method: "POST", body: fd });
-        const json = await res.json();
-        if (res.ok && json.publicUrl) logoUrl = json.publicUrl;
+        const isHeicLogo =
+          logoFile.name.toLowerCase().endsWith(".heic") ||
+          (logoFile.type && logoFile.type.includes("heic"));
+
+        let uploadLogo: File = logoFile;
+        let uploadedUrl: string | null = null;
+
+        if (isHeicLogo) {
+          try {
+            const mod = await import("heic2any");
+            const heic2any = (mod as any).default || mod;
+            const converted = (await heic2any({ blob: logoFile, toType: "image/png" })) as Blob;
+            uploadLogo = new File([converted], logoFile.name.replace(/\.heic$/i, ".png"), {
+              type: "image/png",
+            });
+          } catch (e) {
+            // Fallback to server convert endpoint with original HEIC
+            const fd = new FormData();
+            fd.append("file", logoFile);
+            fd.append("folder", "logos");
+            const res = await fetch("/api/convert-upload", { method: "POST", body: fd });
+            const json = await res.json();
+            if (res.ok && json.publicUrl) uploadedUrl = json.publicUrl;
+          }
+        }
+
+        if (!uploadedUrl) {
+          const fd = new FormData();
+          fd.append("file", uploadLogo);
+          fd.append("folder", "logos");
+          const res = await fetch("/api/upload", { method: "POST", body: fd });
+          const json = await res.json();
+          if (res.ok && json.publicUrl) uploadedUrl = json.publicUrl;
+        }
+
+        if (uploadedUrl) logoUrl = uploadedUrl;
       }
-      const body = {
-        perGram: Number(perGram),
-        perSovereign: Number(perSovereign),
-        imageUrl,
-        logoUrl,
-        shopName,
-        shopAddress,
-        date,
-        primaryColor,
-        accentColor,
-        bgColor,
-      };
-      const res = await fetch("/api/rates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) throw new Error("Failed to save rate");
+      // First, persist theme + logo in settings
+      {
+        const sres = await fetch("/api/settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            theme: "classic",
+            primaryColor,
+            accentColor,
+            bgColor,
+            logoUrl: logoUrl ?? null,
+          }),
+        });
+        if (!sres.ok) {
+          const j = await sres.json().catch(() => ({}));
+          throw new Error(j.error || "Failed to save settings");
+        }
+      }
+
+      // Then, save the price/rate data
+      {
+        const rres = await fetch("/api/rates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            perGram: Number(perGram),
+            perSovereign: Number(perSovereign),
+            imageUrl,
+            shopName,
+            shopAddress,
+            date,
+          }),
+        });
+        if (!rres.ok) {
+          const j = await rres.json().catch(() => ({}));
+          throw new Error(j.error || "Failed to save rate");
+        }
+      }
       router.push("/");
     } catch (err) {
       console.error(err);
