@@ -60,25 +60,66 @@ export default function Home() {
           })
       )
     );
-    await new Promise((r) => setTimeout(r, 150));
+    // wait for webfonts to be ready to avoid text reflow in snapshot
+    try {
+      // @ts-ignore
+      if (document.fonts && document.fonts.ready) {
+        // @ts-ignore
+        await document.fonts.ready;
+      }
+    } catch {}
+    // allow layout to settle a bit
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    await new Promise((r) => setTimeout(r, 50));
+
+    // use precise dimensions to avoid rounding differences
+    const rect = node.getBoundingClientRect();
+    const width = Math.round(rect.width);
+    const height = Math.round(rect.height);
 
     let dataUrl: string;
     try {
       dataUrl = await htmlToImage.toPng(node, {
         cacheBust: true,
         pixelRatio: Math.min(3, (window.devicePixelRatio || 2) * 1.25),
+        width,
+        height,
         quality: 1,
         backgroundColor: "#000000",
         fetchRequestInit: { mode: "cors", credentials: "omit" },
-        style: { transform: "none", transformOrigin: "top left", filter: "none" },
+        style: {
+          transform: "none",
+          transformOrigin: "top left",
+          filter: "none",
+          textRendering: "geometricPrecision",
+          // @ts-ignore vendor properties
+          MozOsxFontSmoothing: "grayscale",
+          // @ts-ignore vendor properties
+          WebkitFontSmoothing: "antialiased",
+          fontKerning: "none",
+          fontSynthesis: "none",
+        } as any,
       });
     } catch {
       dataUrl = await htmlToImage.toPng(node, {
         cacheBust: true,
         pixelRatio: Math.min(2.25, window.devicePixelRatio || 2),
+        width,
+        height,
         backgroundColor: "#000000",
         fetchRequestInit: { mode: "cors", credentials: "omit" },
-        style: { transform: "none", transformOrigin: "top left", filter: "none" },
+        style: {
+          transform: "none",
+          transformOrigin: "top left",
+          filter: "none",
+          textRendering: "geometricPrecision",
+          // @ts-ignore vendor properties
+          MozOsxFontSmoothing: "grayscale",
+          // @ts-ignore vendor properties
+          WebkitFontSmoothing: "antialiased",
+          fontKerning: "none",
+          fontSynthesis: "none",
+        } as any,
       });
     }
     const base64Data = dataUrl.split(",")[1];

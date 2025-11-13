@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   FiDollarSign,
@@ -9,6 +10,7 @@ import {
   FiScissors,
   FiSliders,
   FiLock,
+  FiExternalLink,
 } from "react-icons/fi";
 import Cropper from "react-easy-crop";
 
@@ -16,6 +18,7 @@ export default function AdminPage() {
   const router = useRouter();
 
   // Core states
+  const [initialLoading, setInitialLoading] = useState(true);
   const [perGram, setPerGram] = useState("");
   const [perSovereign, setPerSovereign] = useState("");
   const [shopName, setShopName] = useState("");
@@ -142,6 +145,7 @@ export default function AdminPage() {
   // Fetch data
   useEffect(() => {
     (async () => {
+      setInitialLoading(true);
       const now = new Date();
       const tzAdjusted = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
       const todayLocal = tzAdjusted.toISOString().slice(0, 10);
@@ -179,6 +183,8 @@ export default function AdminPage() {
         }
       } catch (err) {
         console.error("Settings fetch failed:", err);
+      } finally {
+        setInitialLoading(false);
       }
     })();
   }, []);
@@ -391,7 +397,18 @@ export default function AdminPage() {
 
   return (
     <main className="min-h-dvh bg-gradient-to-br from-gray-950 via-black to-amber-950 p-4">
+      {/* Top bar with link to main page */}
       <div className="max-w-md mx-auto">
+        <div className="flex items-center justify-between mb-2">
+          <div />
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-lg bg-white/10 border border-white/15 px-3 py-1.5 text-amber-100 hover:bg-white/15 transition"
+            title="Open main page"
+          >
+            <FiExternalLink /> Main Page
+          </Link>
+        </div>
         <div className="text-center mb-6">
           <img
             src={logoPreviewUrl || "/logo.jpg"}
@@ -618,6 +635,16 @@ export default function AdminPage() {
             {loading ? "Saving..." : "Save Rate"}
           </button>
         </form>
+
+        {/* Initial loader overlay */}
+        {initialLoading && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+            <div className="flex items-center gap-3 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white">
+              <div className="w-5 h-5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+              <span className="font-medium">Loading data…</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Cropper */}

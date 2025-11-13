@@ -172,12 +172,14 @@ export default function ClassicCard({
       )}
 
       <div className="relative z-20 flex flex-col items-center space-y-2 p-3 sm:p-3">
-        {/* Logo with simple placeholder (no spinner) */}
+        {/* Logo with loading indicator */}
         <div className="mt-1 relative h-12 sm:h-14 flex items-center justify-center">
-          {/* Placeholder shown until image loads, or when no logoUrl */}
           {!logoLoaded && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="px-3 py-1.5 rounded-md bg-white/10 border border-white/15 text-amber-200/80 text-xs">Logo</div>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-white/10 border border-white/15 text-amber-200/80 text-xs">
+                <span className="inline-block w-3 h-3 rounded-full border-2 border-amber-300/70 border-t-transparent animate-spin" />
+                Loading…
+              </div>
             </div>
           )}
           {settings.logoUrl && (
@@ -200,7 +202,8 @@ export default function ClassicCard({
         </div>
 
         {/* Title */}
-        <h1 className="text-center text-xl sm:text-2xl font-bold tracking-tight font-serif text-white drop-shadow-sm leading-tight">
+        <h1 className="text-center text-xl sm:text-2xl font-bold tracking-tight font-serif text-white drop-shadow-sm leading-tight"
+            style={{textRendering: 'optimizeLegibility', fontKerning: 'none'}}>
           Today’s{" "}
           <span className="text-transparent bg-gradient-to-r from-amber-300 to-amber-500 bg-clip-text">
             Gold Rate
@@ -247,8 +250,11 @@ export default function ClassicCard({
                   }`}
                 />
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900 text-amber-200/60 text-xs">
-                  No Image
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900 text-amber-200/80 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block w-4 h-4 rounded-full border-2 border-amber-300/70 border-t-transparent animate-spin" />
+                    Loading…
+                  </div>
                 </div>
               )}
               {imageLoading && (
@@ -286,12 +292,12 @@ export default function ClassicCard({
                 }}
               >
                 <div
-                  className="text-lg sm:text-xl font-black mb-0.5"
-                  style={{ color: primary }}
+                  className="text-lg sm:text-xl font-extrabold mb-0.5"
+                  style={{ color: primary, textRendering: 'geometricPrecision', fontKerning: 'none' }}
                 >
                   ₹ {item.value?.toLocaleString("en-IN") ?? "—"}
                 </div>
-                <div className="text-amber-50/90 text-[11px] sm:text-xs font-semibold uppercase tracking-wider">
+                <div className="text-amber-50/90 text-[11px] sm:text-xs font-semibold uppercase tracking-wider" style={{fontKerning: 'none'}}>
                   {item.label}
                 </div>
               </div>
@@ -299,14 +305,20 @@ export default function ClassicCard({
           ))}
         </div>
 
-        {/* Shop Info */}
-        <p className="text-center text-amber-200/90 font-medium tracking-wide bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl px-3 py-1.5 text-xs sm:text-sm shadow-inner mt-2 leading-snug">
-          🏛️ {rate?.shop_name || "KGP Gold, Mangalya Complex"}
-          <br />
-          <span className="text-amber-100/70 text-[10px] sm:text-xs">
-            {rate?.shop_address || "Main Road, Koduvally"}
-          </span>
-        </p>
+        {/* Shop Info (ensure both lines stay inside the box) */}
+        <div className="mt-2 w-full flex items-center justify-center">
+          <div className="text-center bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl px-4 py-2 sm:py-2.5 shadow-inner" style={{minWidth: 240}}>
+            <div className="flex items-center justify-center gap-2 text-amber-200/90 font-medium tracking-wide text-xs sm:text-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-amber-200/90">
+                <path d="M3 10l9-7 9 7v2h-2v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1v-8H2v-2z" />
+              </svg>
+              <span>{rate?.shop_name || "KGP Gold, Mangalya Gold Souk"}</span>
+            </div>
+            <div className="text-amber-100/80 text-[11px] sm:text-xs mt-0.5" style={{fontKerning:'none'}}>
+              {rate?.shop_address || "Main Road, Koduvally"}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Bottom strip */}
