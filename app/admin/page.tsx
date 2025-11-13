@@ -399,16 +399,6 @@ export default function AdminPage() {
     <main className="min-h-dvh bg-gradient-to-br from-gray-950 via-black to-amber-950 p-4">
       {/* Top bar with link to main page */}
       <div className="max-w-md mx-auto">
-        <div className="flex items-center justify-between mb-2">
-          <div />
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-lg bg-white/10 border border-white/15 px-3 py-1.5 text-amber-100 hover:bg-white/15 transition"
-            title="Open main page"
-          >
-            <FiExternalLink /> Main Page
-          </Link>
-        </div>
         <div className="text-center mb-6">
           <img
             src={logoPreviewUrl || "/logo.jpg"}
@@ -634,6 +624,14 @@ export default function AdminPage() {
           >
             {loading ? "Saving..." : "Save Rate"}
           </button>
+
+          <Link
+            href="/"
+            className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 border border-white/15 px-4 py-3 text-amber-100 hover:bg-white/15 transition"
+            title="Go to main page"
+          >
+            <FiExternalLink /> Main Page
+          </Link>
         </form>
 
         {/* Initial loader overlay */}
