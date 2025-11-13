@@ -338,6 +338,15 @@ export default function Home() {
           hideFrontCanvas={hideFront}
         />
       </div>
+
+      {exporting && (
+        <div className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm flex items-center justify-center">
+          <div className="flex items-center gap-3 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white">
+            <div className="w-5 h-5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+            <span className="font-medium">Preparing image…</span>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

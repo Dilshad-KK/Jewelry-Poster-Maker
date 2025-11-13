@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import { isAdminAuthorized } from '@/lib/auth';
+import sharp from 'sharp';
 
 export const runtime = 'nodejs';
 
@@ -26,14 +27,46 @@ export async function POST(req: Request) {
   const origName = desiredName || file.name || 'upload';
   const safeName = origName.replace(/[^a-zA-Z0-9._-]/g, '_');
   const stamp = Date.now();
-  const uniqueName = `${stamp}-${safeName}`;
-  const path = folder ? `${folder.replace(/\/$/, '')}/${uniqueName}` : uniqueName;
+  const base = safeName.replace(/\.[^.]+$/, '') || 'upload';
 
   const bucket = 'uploads';
 
-  const { data, error } = await supabaseAdmin.storage.from(bucket).upload(path, file, {
+  // Read once
+  const ab = await file.arrayBuffer();
+  let outBuffer: Buffer = Buffer.from(ab);
+  let outContentType: string = file.type || 'application/octet-stream';
+  let outExt: string = '';
+
+  // Try to convert to PNG using sharp. If that fails, keep original bytes/type/ext.
+  try {
+    const converted = await sharp(Buffer.from(ab)).png({ compressionLevel: 9 }).toBuffer();
+    outBuffer = converted;
+    outContentType = 'image/png';
+    outExt = '.png';
+  } catch {
+    // Determine extension from type or name
+    const typeToExt: Record<string, string> = {
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp',
+      'image/gif': '.gif',
+      'image/avif': '.avif',
+      'image/heic': '.heic',
+      'image/heif': '.heif',
+      'image/bmp': '.bmp',
+      'image/tiff': '.tif',
+      'image/svg+xml': '.svg',
+    };
+    outExt = typeToExt[outContentType] || (safeName.match(/\.[^.]+$/)?.[0].toLowerCase() || '.bin');
+  }
+
+  const uniqueName = `${stamp}-${base}${outExt || '.png'}`;
+  const path = folder ? `${folder.replace(/\/$/, '')}/${uniqueName}` : uniqueName;
+
+  const { data, error } = await supabaseAdmin.storage.from(bucket).upload(path, outBuffer, {
     upsert: false,
     cacheControl: '3600',
+    contentType: outContentType,
   });
 
   if (error) {
