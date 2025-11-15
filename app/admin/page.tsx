@@ -11,6 +11,7 @@ import {
   FiSliders,
   FiLock,
   FiExternalLink,
+  FiLogOut,
 } from "react-icons/fi";
 import Cropper from "react-easy-crop";
 
@@ -61,6 +62,7 @@ export default function AdminPage() {
   const [accentColor, setAccentColor] = useState(palettes[0].accent);
   const [bgColor, setBgColor] = useState(palettes[0].bg);
   const [loading, setLoading] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
   const hexToRgb = (hex: string) => {
@@ -245,6 +247,19 @@ export default function AdminPage() {
     setCropOpen(false);
   }, [tempImageUrl, croppedAreaPixels, getCroppedDataUrl]);
 
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (e) {
+      console.error("Logout failed", e);
+    } finally {
+      setLoggingOut(false);
+      router.replace("/admin/login");
+    }
+  };
+
   // HEIC conversion
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] || null;
@@ -400,12 +415,16 @@ export default function AdminPage() {
       {/* Top bar with link to main page */}
       <div className="max-w-md mx-auto">
         <div className="text-center mb-6">
-          <img
-            src={logoPreviewUrl || "/logo.jpg"}
-            alt="KGP Gold"
-            className="mx-auto h-14 mb-4 object-contain"
-          />
-          <h1 className="text-2xl font-bold text-white mb-1">Update KGP Gold Rates</h1>
+          {logoPreviewUrl && (
+            <img
+              src={logoPreviewUrl}
+              alt="KGP Gold"
+              className="mx-auto h-14 mb-4 object-contain"
+            />
+          )}
+          <h1 className="text-2xl font-bold text-white mb-1">
+            Update KGP Gold Rates
+          </h1>
           <p className="text-amber-200/80 text-sm">
             Set today's gold prices and shop info
           </p>
@@ -625,13 +644,25 @@ export default function AdminPage() {
             {loading ? "Saving..." : "Save Rate"}
           </button>
 
-          <Link
-            href="/"
-            className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 border border-white/15 px-4 py-3 text-amber-100 hover:bg-white/15 transition"
-            title="Go to main page"
-          >
-            <FiExternalLink /> Main Page
-          </Link>
+          <div className="mt-3 flex flex-col sm:flex-row gap-2">
+            <Link
+              href="/"
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 border border-white/15 px-4 py-3 text-amber-100 hover:bg-white/15 transition"
+              title="Go to main page"
+            >
+              <FiExternalLink /> Main Page
+            </Link>
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-red-600/80 border border-red-500/60 px-4 py-3 text-white hover:bg-red-600 transition disabled:opacity-60"
+              title="Logout"
+            >
+              <FiLogOut />
+              {loggingOut ? "Logging out…" : "Logout"}
+            </button>
+          </div>
         </form>
 
         {/* Initial loader overlay */}
