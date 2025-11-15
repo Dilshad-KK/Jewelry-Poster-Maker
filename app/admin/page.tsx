@@ -228,11 +228,12 @@ export default function AdminPage() {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("No canvas context");
-    const size = 1200;
-    canvas.width = size;
-    canvas.height = size;
+    const width = 1200;
+    const height = Math.round(width * 0.9); // match main card image aspect (pt-[90%])
+    canvas.width = width;
+    canvas.height = height;
     ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(image, crop.x, crop.y, crop.width, crop.height, 0, 0, size, size);
+    ctx.drawImage(image, crop.x, crop.y, crop.width, crop.height, 0, 0, width, height);
     return canvas.toDataURL("image/png", 1);
   }, []);
   const confirmCrop = useCallback(async () => {
@@ -500,18 +501,28 @@ export default function AdminPage() {
           {/* Preview */}
           <div className="mt-3">
             <p className="text-amber-200/80 text-xs mb-1">Preview:</p>
-            <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-amber-500/30 bg-black/30 flex items-center justify-center">
-              {imageProcessing ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/70 text-amber-300 text-xs font-medium animate-pulse">
-                  Converting...
-                </div>
-              ) : croppedDataUrl ? (
-                <img src={croppedDataUrl} className="w-full h-full object-cover" />
-              ) : previousImageUrl ? (
-                <img src={previousImageUrl} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-amber-200/60 text-xs">No image</span>
-              )}
+            <div className="relative w-32 rounded-xl overflow-hidden border border-amber-500/30 bg-black/30">
+              <div className="relative w-full pt-[90%]">
+                {imageProcessing ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/70 text-amber-300 text-xs font-medium animate-pulse">
+                    Converting...
+                  </div>
+                ) : croppedDataUrl ? (
+                  <img
+                    src={croppedDataUrl}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : previousImageUrl ? (
+                  <img
+                    src={previousImageUrl}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-amber-200/60 text-xs">No image</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Crop Button */}
@@ -700,7 +711,7 @@ export default function AdminPage() {
                 image={tempImageUrl}
                 crop={crop}
                 zoom={zoom}
-                aspect={1}
+                aspect={10 / 9}
                 onCropChange={setCrop}
                 onZoomChange={setZoom}
                 onCropComplete={onCropComplete}
