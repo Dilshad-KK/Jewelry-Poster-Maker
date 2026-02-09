@@ -34,7 +34,7 @@ export async function POST() {
   }
 
   // Copy fields from latest into a new row for today
-  const row = {
+  const row: Record<string, unknown> = {
     date: today,
     per_gram: latest.per_gram,
     per_sovereign: latest.per_sovereign,
@@ -42,6 +42,10 @@ export async function POST() {
     shop_name: latest.shop_name ?? null,
     shop_address: latest.shop_address ?? null,
   };
+
+  if ('per_gram_18k' in latest) {
+    row.per_gram_18k = (latest as any).per_gram_18k ?? null;
+  }
 
   const { data, error } = await supabaseAdmin
     .from('rates')
@@ -55,4 +59,3 @@ export async function POST() {
 
   return NextResponse.json({ created: true, rate: data });
 }
-

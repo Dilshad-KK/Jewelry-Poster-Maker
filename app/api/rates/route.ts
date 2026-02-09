@@ -8,6 +8,7 @@ export const runtime = 'nodejs';
 type RatePayload = {
   date?: string; // ISO date (yyyy-mm-dd), defaults to today (UTC)
   perGram: number;
+  perGram18k?: number | null;
   perSovereign: number;
   imageUrl?: string | null;
   shopName?: string | null;
@@ -57,7 +58,7 @@ export async function POST(req: Request) {
   }
 
   const today = new Date().toISOString().slice(0, 10); // yyyy-mm-dd
-  const row = {
+  const row: Record<string, unknown> = {
     date: body.date ?? today,
     per_gram: body.perGram,
     per_sovereign: body.perSovereign,
@@ -66,11 +67,25 @@ export async function POST(req: Request) {
     shop_address: body.shopAddress ?? null,
   };
 
-  const { data, error } = await supabaseAdmin
+  if (body.perGram18k !== undefined) {
+    row.per_gram_18k = body.perGram18k;
+  }
+
+  let { data, error } = await supabaseAdmin
     .from('rates')
     .upsert(row, { onConflict: 'date' })
     .select()
     .maybeSingle();
+
+  // Backward-compat: if DB doesn't have the new column yet, retry without it.
+  if (error && (error as any)?.message?.includes('per_gram_18k')) {
+    const { per_gram_18k: _ignored, ...fallbackRow } = row;
+    ({ data, error } = await supabaseAdmin
+      .from('rates')
+      .upsert(fallbackRow, { onConflict: 'date' })
+      .select()
+      .maybeSingle());
+  }
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

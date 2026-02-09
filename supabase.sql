@@ -4,6 +4,7 @@
 create table if not exists public.rates (
   date date primary key,
   per_gram numeric not null,
+  per_gram_18k numeric,
   per_sovereign numeric not null,
   image_url text,
   shop_name text,
@@ -11,6 +12,10 @@ create table if not exists public.rates (
   inserted_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- If you already created the table earlier, run this to add the new column:
+alter table if exists public.rates
+  add column if not exists per_gram_18k numeric;
 
 -- Trigger to auto-update updated_at
 create or replace function public.set_updated_at()

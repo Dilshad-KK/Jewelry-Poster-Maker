@@ -5,6 +5,7 @@ import { FiDownload } from "react-icons/fi";
 type Rate = {
   date?: string;
   per_gram?: number;
+  per_gram_18k?: number | null;
   per_sovereign?: number;
   image_url?: string | null;
   shop_name?: string | null;
@@ -62,6 +63,26 @@ export default function ClassicCard({
   const primary = settings.primaryColor || "#f59e0b";
   const accent = settings.accentColor || "#fbbf24";
   const bg = settings.bgColor || "#0b0b0b";
+
+  const toFiniteNumber = (value: unknown): number | null => {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && value.trim() !== "") {
+      const n = Number(value);
+      if (Number.isFinite(n)) return n;
+    }
+    return null;
+  };
+
+  const formatINR = (value: unknown) => {
+    const n = toFiniteNumber(value);
+    if (n === null) return "—";
+    return n.toLocaleString("en-IN");
+  };
+
+  const perGram18k = toFiniteNumber(rate?.per_gram_18k);
+  const perGram22k = toFiniteNumber(rate?.per_gram);
+  const derived18k =
+    perGram18k ?? (perGram22k === null ? null : Math.round(((perGram22k * 18) / 22) * 100) / 100);
 
   return (
     <div
@@ -267,42 +288,73 @@ export default function ClassicCard({
           </div>
         </div>
 
-        {/* Price boxes */}
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 w-full mt-2">
-          {[
-            { label: "Per Gram", value: rate?.per_gram },
-            { label: "Per Sovereign", value: rate?.per_sovereign },
-          ].map((item, i) => (
-            <div key={i} className="group relative">
-              <div
-                className="absolute -inset-0.5 rounded-2xl blur opacity-40 group-hover:opacity-70 transition duration-300"
-                style={{
-                  backgroundImage: `linear-gradient(to right, ${primary}, ${accent})`,
-                }}
-              />
-              <div
-                className="relative backdrop-blur-md rounded-xl p-2 sm:p-3 text-center transition-all duration-300 border"
-                style={{
-                  background: `linear-gradient(180deg, rgba(0,0,0,0.55), ${hexToRgba(
-                    accent,
-                    0.08
-                  )})`,
-                  borderColor: hexToRgba(primary, 0.45),
-                  boxShadow: `0 3px 12px ${hexToRgba(primary, 0.12)}`,
-                }}
-              >
-                <div
-                  className="text-lg sm:text-xl font-extrabold mb-0.5"
-                  style={{ color: primary, textRendering: 'geometricPrecision', fontKerning: 'none' }}
-                >
-                  ₹ {item.value?.toLocaleString("en-IN") ?? "—"}
-                </div>
-                <div className="text-amber-50/90 text-[11px] sm:text-xs font-semibold uppercase tracking-wider" style={{fontKerning: 'none'}}>
-                  {item.label}
-                </div>
+        {/* Price strip (22K 1GM / 22K 8GM / 18K 1GM) */}
+        <div className="w-full mt-2">
+          <div className="group relative">
+            <div
+              className="absolute -inset-0.5 rounded-2xl blur opacity-40 group-hover:opacity-70 transition duration-300"
+              style={{
+                backgroundImage: `linear-gradient(to right, ${primary}, ${accent})`,
+              }}
+            />
+            <div
+              className="relative backdrop-blur-md rounded-2xl overflow-hidden transition-all duration-300 border"
+              style={{
+                background: `linear-gradient(180deg, rgba(0,0,0,0.55), ${hexToRgba(
+                  accent,
+                  0.08
+                )})`,
+                borderColor: hexToRgba(primary, 0.45),
+                boxShadow: `0 3px 12px ${hexToRgba(primary, 0.12)}`,
+              }}
+            >
+              <div className="grid grid-cols-3">
+                {[
+                  { unit: "1GM", karat: "22K", value: rate?.per_gram },
+                  { unit: "8GM", karat: "22K", value: rate?.per_sovereign },
+                  { unit: "1GM", karat: "18K", value: derived18k },
+                ].map((item, i) => (
+                  <div
+                    key={i}
+                    className={`px-3 py-2 sm:px-4 sm:py-3 ${
+                      i === 0 ? "" : "border-l-2 border-dotted"
+                    }`}
+                    style={{ borderColor: hexToRgba(primary, 0.35) }}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-[10px] sm:text-xs font-extrabold tracking-wider"
+                        style={{
+                          background: hexToRgba(accent, 0.18),
+                          borderColor: hexToRgba(accent, 0.35),
+                          color: "rgba(255,255,255,0.9)",
+                          fontKerning: "none",
+                        }}
+                      >
+                        {item.unit}
+                      </span>
+                      <span
+                        className="text-lg sm:text-xl font-extrabold font-serif"
+                        style={{ color: accent, fontKerning: "none" }}
+                      >
+                        {item.karat}
+                      </span>
+                    </div>
+                    <div
+                      className="mt-1 flex flex-nowrap items-baseline gap-1 text-[18px] sm:text-[22px] font-extrabold text-white leading-tight whitespace-nowrap tracking-tight"
+                      style={{
+                        textRendering: "geometricPrecision",
+                        fontKerning: "none",
+                      }}
+                    >
+                      <span>₹</span>
+                      <span>{formatINR(item.value)}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
+          </div>
         </div>
 
         {/* Shop Info (ensure both lines stay inside the box) */}

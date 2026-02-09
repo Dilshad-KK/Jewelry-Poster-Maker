@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 type Rate = {
   date?: string;
   per_gram?: number;
+  per_gram_18k?: number | null;
   per_sovereign?: number;
   image_url?: string | null;
   shop_name?: string | null;

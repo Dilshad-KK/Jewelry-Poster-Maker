@@ -21,6 +21,7 @@ export default function AdminPage() {
   // Core states
   const [initialLoading, setInitialLoading] = useState(true);
   const [perGram, setPerGram] = useState("");
+  const [perGram18k, setPerGram18k] = useState("");
   const [perSovereign, setPerSovereign] = useState("");
   const [shopName, setShopName] = useState("");
   const [shopAddress, setShopAddress] = useState("");
@@ -161,6 +162,7 @@ export default function AdminPage() {
           if (r.shop_name) setShopName(r.shop_name);
           if (r.shop_address) setShopAddress(r.shop_address);
           if (typeof r.per_gram === "number") setPerGram(String(r.per_gram));
+          if (typeof r.per_gram_18k === "number") setPerGram18k(String(r.per_gram_18k));
           if (typeof r.per_sovereign === "number")
             setPerSovereign(String(r.per_sovereign));
           if (r.image_url) setPreviousImageUrl(r.image_url);
@@ -199,6 +201,16 @@ export default function AdminPage() {
       setPerSovereign(Number.isInteger(s) ? String(s) : s.toFixed(2));
     } else setPerSovereign("");
   }, [perGram]);
+
+  // Auto-calc 18K per gram (fills only if empty)
+  useEffect(() => {
+    if (perGram18k !== "") return;
+    const g = Number(perGram);
+    if (!isNaN(g) && perGram !== "") {
+      const v = (g * 18) / 22;
+      setPerGram18k(Number.isInteger(v) ? String(v) : v.toFixed(2));
+    }
+  }, [perGram, perGram18k]);
 
   // Live logo preview
   useEffect(() => {
@@ -388,6 +400,7 @@ export default function AdminPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             perGram: Number(perGram),
+            perGram18k: perGram18k === "" ? null : Number(perGram18k),
             perSovereign: Number(perSovereign),
             imageUrl,
             shopName,
@@ -456,6 +469,17 @@ export default function AdminPage() {
               type="number"
               value={perSovereign}
               readOnly
+              className="w-full rounded-xl bg-black/40 border border-amber-500/30 p-4 text-white"
+            />
+
+            <label className="block text-amber-300 font-semibold">
+              <FiAward className="inline mr-2" /> 18K Per Gram
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={perGram18k}
+              onChange={(e) => setPerGram18k(e.target.value)}
               className="w-full rounded-xl bg-black/40 border border-amber-500/30 p-4 text-white"
             />
           </div>
