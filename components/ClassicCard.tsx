@@ -279,11 +279,12 @@ export default function ClassicCard({
                 </div>
               )}
               {imageLoading && (
-                <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center">
-                  <div className="w-6 h-6 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" />
-                </div>
+                !exporting && (
+                  <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" />
+                  </div>
+                )
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             </div>
           </div>
         </div>
