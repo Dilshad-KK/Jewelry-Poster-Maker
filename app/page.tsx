@@ -30,11 +30,13 @@ export default function Home() {
   const cardRef = useRef<HTMLDivElement | null>(null);
 
   const [rate, setRate] = useState<any>(null);
+  const [previousRate, setPreviousRate] = useState<any>(null);
   const [displayImg, setDisplayImg] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [hideShare, setHideShare] = useState(false);
   const [hideFront, setHideFront] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
 
   const [settings, setSettings] = useState({
     theme: "classic" as const,
@@ -235,6 +237,7 @@ export default function Home() {
         const res = await fetch("/api/rates", { cache: "no-store" });
         const json = await res.json();
         const latest = json?.rate ?? null;
+        const prev = json?.previousRate ?? null;
         // Normalize date: if not today's date, show today
         let adjusted = latest;
         if (latest && latest.date) {
@@ -246,6 +249,7 @@ export default function Home() {
           }
         }
         setRate(adjusted);
+        setPreviousRate(prev);
 
         const url = adjusted?.image_url;
         if (url) {
@@ -364,9 +368,10 @@ export default function Home() {
     >
       <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 z-0" />
 
-      <div className="relative z-10 w-full max-w-md overflow-hidden">
+      <div className="relative z-10 w-full max-w-md">
         <ClassicCard
           rate={rate}
+          previousRate={showComparison ? previousRate : null}
           settings={settings}
           displayImg={displayImg}
           imageLoading={imageLoading}
@@ -378,6 +383,31 @@ export default function Home() {
           onSave={saveCard}
           hideFrontCanvas={hideFront}
         />
+
+        {/* Comparison toggle — hidden during export */}
+        {!exporting && (
+          <div className="flex items-center justify-center mt-3 gap-2.5">
+            <span className="text-white/50 text-xs font-medium tracking-wide select-none">
+              Compare with yesterday
+            </span>
+            <button
+              role="switch"
+              aria-checked={showComparison}
+              onClick={() => setShowComparison((v) => !v)}
+              className="relative flex-shrink-0 w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none"
+              style={{
+                backgroundColor: showComparison
+                  ? (settings.primaryColor || "#f59e0b")
+                  : "rgba(255,255,255,0.12)",
+              }}
+            >
+              <span
+                className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200"
+                style={{ transform: showComparison ? "translateX(20px)" : "translateX(0)" }}
+              />
+            </button>
+          </div>
+        )}
       </div>
 
       {exporting && (

@@ -47,6 +47,10 @@ export async function POST() {
     row.per_gram_18k = (latest as any).per_gram_18k ?? null;
   }
 
+  if ('per_gram_9k' in latest) {
+    row.per_gram_9k = (latest as any).per_gram_9k ?? null;
+  }
+
   const { data, error } = await supabaseAdmin
     .from('rates')
     .upsert(row, { onConflict: 'date' })

@@ -6,6 +6,7 @@ type Rate = {
   date?: string;
   per_gram?: number;
   per_gram_18k?: number | null;
+  per_gram_9k?: number | null;
   per_sovereign?: number;
   image_url?: string | null;
   shop_name?: string | null;
@@ -22,6 +23,7 @@ type Settings = {
 
 type Props = {
   rate: Rate;
+  previousRate?: Rate;
   settings: Settings;
   displayImg: string | null;
   imageLoading: boolean;
@@ -36,6 +38,7 @@ type Props = {
 
 export default function ClassicCard({
   rate,
+  previousRate,
   settings,
   displayImg,
   imageLoading,
@@ -79,10 +82,24 @@ export default function ClassicCard({
     return n.toLocaleString("en-IN");
   };
 
-  const perGram18k = toFiniteNumber(rate?.per_gram_18k);
   const perGram22k = toFiniteNumber(rate?.per_gram);
-  const derived18k =
-    perGram18k ?? (perGram22k === null ? null : Math.round(((perGram22k * 18) / 22) * 100) / 100);
+  const perGram18k = toFiniteNumber(rate?.per_gram_18k);
+  const perGram9k   = toFiniteNumber(rate?.per_gram_9k);
+
+  // Previous day — stored values only, no derivation
+  const prevPerGram22k = toFiniteNumber(previousRate?.per_gram);
+  const prevPerGram18k = toFiniteNumber(previousRate?.per_gram_18k);
+  const prevPerGram9k  = toFiniteNumber(previousRate?.per_gram_9k);
+  const prevSovereign  = toFiniteNumber(previousRate?.per_sovereign);
+
+
+  // Returns signed delta, 0 if no change, null only if no previous data
+  const delta = (current: number | null | undefined, previous: number | null | undefined): number | null => {
+    const c = toFiniteNumber(current);
+    const p = toFiniteNumber(previous);
+    if (c === null || p === null) return null;
+    return Math.round((c - p) * 100) / 100;
+  };
 
   return (
     <div
@@ -192,9 +209,9 @@ export default function ClassicCard({
         />
       )}
 
-      <div className="relative z-20 flex flex-col items-center space-y-2 p-3 sm:p-3">
+      <div className="relative z-20 flex flex-col items-center space-y-3.5 p-4 sm:p-5">
         {/* Logo with loading indicator */}
-        <div className="mt-1 relative h-12 sm:h-14 flex items-center justify-center">
+        <div className="mt-2 relative h-12 sm:h-14 flex items-center justify-center">
           {!logoLoaded && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-white/10 border border-white/15 text-amber-200/80 text-xs">
@@ -248,7 +265,7 @@ export default function ClassicCard({
         </div>
 
         {/* Image */}
-        <div className="relative w-full max-w-[270px] sm:max-w-xs mt-1">
+        <div className="relative w-full max-w-[270px] sm:max-w-xs mt-2.5">
           <div
             className="absolute -inset-2 rounded-2xl blur-lg"
             style={{ background: hexToRgba(accent, 0.1) }}
@@ -289,77 +306,100 @@ export default function ClassicCard({
           </div>
         </div>
 
-        {/* Price strip (22K 1GM / 22K 8GM / 18K 1GM) */}
-        <div className="w-full mt-2">
+        {/* Price strip — 4 cols, single row */}
+        <div className="w-full mt-3.5">
           <div className="group relative">
             <div
               className="absolute -inset-0.5 rounded-2xl blur opacity-40 group-hover:opacity-70 transition duration-300"
-              style={{
-                backgroundImage: `linear-gradient(to right, ${primary}, ${accent})`,
-              }}
+              style={{ backgroundImage: `linear-gradient(to right, ${primary}, ${accent})` }}
             />
             <div
-              className="relative backdrop-blur-md rounded-2xl overflow-hidden transition-all duration-300 border"
+              className="relative backdrop-blur-md rounded-2xl overflow-hidden border"
               style={{
-                background: `linear-gradient(180deg, rgba(0,0,0,0.55), ${hexToRgba(
-                  accent,
-                  0.08
-                )})`,
+                background: `linear-gradient(180deg, rgba(0,0,0,0.55), ${hexToRgba(accent, 0.08)})`,
                 borderColor: hexToRgba(primary, 0.45),
                 boxShadow: `0 3px 12px ${hexToRgba(primary, 0.12)}`,
               }}
             >
-              <div className="grid grid-cols-3">
+              <div className="grid grid-cols-4">
                 {[
-                  { unit: "1GM", karat: "22K", value: rate?.per_gram },
-                  { unit: "8GM", karat: "22K", value: rate?.per_sovereign },
-                  { unit: "1GM", karat: "18K", value: derived18k },
-                ].map((item, i) => (
-                  <div
-                    key={i}
-                    className={`px-3 py-2 sm:px-4 sm:py-3 ${
-                      i === 0 ? "" : "border-l-2 border-dotted"
-                    }`}
-                    style={{ borderColor: hexToRgba(primary, 0.35) }}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span
-                        className="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-[10px] sm:text-xs font-extrabold tracking-wider"
+                  { unit: "1GM", karat: "22K", value: rate?.per_gram,      prev: prevPerGram22k },
+                  { unit: "8GM", karat: "22K", value: rate?.per_sovereign, prev: prevSovereign  },
+                  { unit: "1GM", karat: "18K", value: perGram18k,          prev: prevPerGram18k },
+                  { unit: "1GM", karat: "9K",  value: perGram9k,           prev: prevPerGram9k  },
+                ].map((item, i) => {
+                  const d = delta(item.value, item.prev);
+                  const isUp = d !== null && d > 0;
+                  const isDown = d !== null && d < 0;
+                  return (
+                    <div
+                      key={i}
+                      className={`px-2 py-2 ${i > 0 ? "border-l border-dotted" : ""}`}
+                      style={{ borderColor: hexToRgba(primary, 0.35) }}
+                    >
+                      <div className="flex items-center gap-1 mb-0.5">
+                        <span
+                          className="font-extrabold font-serif leading-none"
+                          style={{ color: accent, fontSize: 14, fontKerning: "none" }}
+                        >
+                          {item.karat}
+                        </span>
+                        <span
+                          className="inline-flex items-center rounded border px-1 py-0.5 text-[8px] font-bold tracking-wider leading-none"
+                          style={{
+                            background: hexToRgba(accent, 0.18),
+                            borderColor: hexToRgba(accent, 0.35),
+                            color: "rgba(255,255,255,0.85)",
+                            fontKerning: "none",
+                          }}
+                        >
+                          {item.unit}
+                        </span>
+                      </div>
+                      <div
+                        className="font-extrabold text-white leading-tight tracking-tight whitespace-nowrap"
                         style={{
-                          background: hexToRgba(accent, 0.18),
-                          borderColor: hexToRgba(accent, 0.35),
-                          color: "rgba(255,255,255,0.9)",
+                          fontSize: "clamp(12px, 3vw, 15px)",
+                          textRendering: "geometricPrecision",
                           fontKerning: "none",
                         }}
                       >
-                        {item.unit}
-                      </span>
-                      <span
-                        className="text-lg sm:text-xl font-extrabold font-serif"
-                        style={{ color: accent, fontKerning: "none" }}
-                      >
-                        {item.karat}
-                      </span>
+                        <span style={{ opacity: 0.6, fontSize: "0.75em" }}>₹</span>
+                        {formatINR(item.value)}
+                      </div>
+                      {/* Delta indicator */}
+                      {previousRate && (
+                        <div
+                          className="flex items-center gap-0.5 mt-0.5 whitespace-nowrap"
+                          style={{
+                            fontSize: "clamp(9px, 2vw, 11px)",
+                            fontWeight: 700,
+                            color: d !== null
+                              ? (d > 0 ? "#4ade80" : d < 0 ? "#f87171" : "#4ade80")
+                              : "rgba(255,255,255,0.25)",
+                            fontKerning: "none",
+                          }}
+                        >
+                          {d !== null ? (
+                            <>
+                              <span>{d > 0 ? "▲" : d < 0 ? "▼" : "▲▼"}</span>
+                              <span>₹{formatINR(Math.abs(d))}</span>
+                            </>
+                          ) : (
+                            <span>—</span>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div
-                      className="mt-1 flex flex-nowrap items-baseline gap-1 text-[18px] sm:text-[22px] font-extrabold text-white leading-tight whitespace-nowrap tracking-tight"
-                      style={{
-                        textRendering: "geometricPrecision",
-                        fontKerning: "none",
-                      }}
-                    >
-                      <span>₹</span>
-                      <span>{formatINR(item.value)}</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
         </div>
 
         {/* Shop Info (ensure both lines stay inside the box) */}
-        <div className="mt-2 w-full flex items-center justify-center">
+        <div className="mt-3.5 w-full flex items-center justify-center">
           <div className="text-center bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl px-4 py-2 sm:py-2.5 shadow-inner" style={{minWidth: 240}}>
             <div className="flex items-center justify-center gap-2 text-amber-200/90 font-medium tracking-wide text-xs sm:text-sm">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-amber-200/90">
