@@ -400,9 +400,6 @@ export default function ClassicCard({
         <div className="mt-3.5 w-full flex items-center justify-center">
           <div className="text-center bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl px-4 py-2 sm:py-2.5 shadow-inner" style={{minWidth: 240}}>
             <div className="flex items-center justify-center gap-2 text-amber-200/90 font-medium tracking-wide text-xs sm:text-sm">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-amber-200/90">
-                <path d="M3 10l9-7 9 7v2h-2v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1v-8H2v-2z" />
-              </svg>
               <span>{rate?.shop_name || "KGP Gold, Mangalya Gold Souk"}</span>
             </div>
             <div className="text-amber-100/80 text-[11px] sm:text-xs mt-0.5" style={{fontKerning:'none'}}>
