@@ -374,9 +374,7 @@ export default function ClassicCard({
                           style={{
                             fontSize: "clamp(9px, 2vw, 11px)",
                             fontWeight: 700,
-                            color: d !== null
-                              ? (d > 0 ? "#4ade80" : d < 0 ? "#f87171" : "#4ade80")
-                              : "rgba(255,255,255,0.25)",
+                            color: d !== null ? accent : "rgba(255,255,255,0.25)",
                             fontKerning: "none",
                           }}
                         >
