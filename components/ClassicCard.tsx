@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { FiDownload } from "react-icons/fi";
+import PhotoWatermark from "./PhotoWatermark";
 
 type Rate = {
   date?: string;
@@ -211,7 +212,7 @@ export default function ClassicCard({
 
       <div className="relative z-20 flex flex-col items-center space-y-3.5 p-4 sm:p-5">
         {/* Logo with loading indicator */}
-        <div className="mt-2 relative h-12 sm:h-14 flex items-center justify-center">
+        <div className="mt-2 relative h-20 sm:h-24 flex items-center justify-center">
           {!logoLoaded && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-white/10 border border-white/15 text-amber-200/80 text-xs">
@@ -234,7 +235,7 @@ export default function ClassicCard({
                 (e.currentTarget as HTMLImageElement).style.opacity = "1";
                 setLogoLoaded(true);
               }}
-              className="h-12 sm:h-14 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] opacity-0 transition-opacity duration-300 relative z-10"
+              className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] opacity-0 transition-opacity duration-300 relative z-10"
             />
           )}
         </div>
@@ -295,6 +296,7 @@ export default function ClassicCard({
                   </div>
                 </div>
               )}
+              {displayImg && <PhotoWatermark logoUrl={settings.logoUrl} />}
               {imageLoading && (
                 !exporting && (
                   <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center">
